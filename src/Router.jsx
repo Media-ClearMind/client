@@ -15,17 +15,17 @@ const Router = () => {
         <BrowserRouter>
             <Routes>
                 {/* NoFooterLayout: signup, login */}
-                <Route element={<NoFooterLayout />}>
+                <Route element={<NoFooterLayout withLoading />}>
                     <Route
-                        path={'/'}
+                        path="/"
                         element={<WelcomePage />}
                     />
                     <Route
-                        path={'/signup'}
+                        path="/signup"
                         element={<SignupPage />}
                     />
                     <Route
-                        path={'/login'}
+                        path="/login"
                         element={<LoginPage />}
                     />
                 </Route>
@@ -34,7 +34,7 @@ const Router = () => {
                 <Route
                     element={
                         <ProtectedRoute>
-                            <Layout />
+                            <Layout withLoading />
                         </ProtectedRoute>
                     }>
                     <Route
