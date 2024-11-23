@@ -73,7 +73,8 @@ function SignupPage() {
 
         try {
             const response = await Auth.registerUser({
-                username,
+                name: username, // username을 name으로 매핑
+                email,
                 password,
                 age: parseInt(age, 10),
                 gender,

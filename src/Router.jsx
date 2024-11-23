@@ -1,29 +1,43 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
+import HomePage from '@/pages/Home'
 import Layout from '@/components/common/layout/index'
 import LoginPage from '@/pages/Login'
+import NoFooterLayout from '@/components/common/layout/no-footer/index'
+import ProtectedRoute from '@/components/common/ProtectedRoute'
 import SignupPage from '@/pages/Signup'
-import WelcomePage from '@/pages/Home'
+import WelcomePage from '@/pages/Main'
 
 const Router = () => {
     return (
         <BrowserRouter>
             <Routes>
-                {/* 루트 경로 */}
-                <Route
-                    path="/"
-                    element={<Layout />}>
+                {/* NoFooterLayout: signup, login */}
+                <Route element={<NoFooterLayout />}>
                     <Route
-                        index
+                        path={'/'}
                         element={<WelcomePage />}
                     />
                     <Route
-                        path="signup"
+                        path={'/signup'}
                         element={<SignupPage />}
                     />
                     <Route
-                        path="login"
+                        path={'/login'}
                         element={<LoginPage />}
+                    />
+                </Route>
+
+                {/* Layout: 루트 및 home */}
+                <Route
+                    element={
+                        <ProtectedRoute>
+                            <Layout />
+                        </ProtectedRoute>
+                    }>
+                    <Route
+                        path="/home"
+                        element={<HomePage />}
                     />
                 </Route>
             </Routes>
