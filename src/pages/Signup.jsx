@@ -95,7 +95,7 @@ function SignupPage() {
                 className="w-full max-w-md bg-white rounded-lg p-6">
                 <h2 className="text-center text-2xl font-bold mb-8">
                     <img
-                        src="/src/assets/images/logo-full-transparent.png"
+                        src="@/assets/images/logo-full-transparent.png"
                         alt="Logo"
                         className="mx-auto w-[50px] h-[50px]"
                     />
