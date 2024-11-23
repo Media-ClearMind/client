@@ -2,13 +2,13 @@ import Modal from 'react-modal'
 import Router from '/src/Router.jsx'
 
 function App() {
-  Modal.setAppElement('#root')
+    Modal.setAppElement('#root')
 
-  return (
-    <>
-      <Router />
-    </>
-  )
+    return (
+        <>
+            <Router />
+        </>
+    )
 }
 
 export default App

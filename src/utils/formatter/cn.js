@@ -1,3 +1,3 @@
 export default function cn(...classes) {
-  return classes.join(' ')
+    return classes.join(' ')
 }
