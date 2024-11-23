@@ -40,7 +40,7 @@ const Router = () => {
                     }>
                     <Route
                         path="/home"
-                        element={<HomePage />}
+                        element={<HomePage user={{ displayName: '사용자' }} />}
                     />
                     <Route
                         path="/mypage"
