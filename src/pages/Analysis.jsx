@@ -178,51 +178,64 @@ const VoiceChat = () => {
     }
 
     return (
-        <div className="w-full h-screen flex justify-center items-center">
-            <div className="w-full max-w-3xl p-6 bg-white rounded-lg">
-                <div className="flex justify-between items-center border-b pb-4 mb-4">
-                    <h1 className="text-xl font-bold">음성 대화 테스트</h1>
-                    <div>
-                        {currentStep + 1} / {questions.length}
-                    </div>
-                </div>
-
-                {!isStarted ? (
-                    <button
-                        onClick={startConversation}
-                        className="w-full py-3 mb-4 bg-black text-white rounded-lg hover:opacity-90 transition">
-                        대화 시작
-                    </button>
-                ) : (
-                    <>
-                        {!currentAnswer && (
-                            <button
-                                onClick={retry}
-                                className="w-full py-3 mb-4 bg-red-600 text-white rounded-lg hover:opacity-90 transition">
-                                다시 답변하기
-                            </button>
-                        )}
-                        <button
-                            onClick={handleNextQuestion}
-                            className={`w-full py-3 mb-4 ${
-                                currentStep === questions.length - 1
-                                    ? 'bg-green-600 hover:opacity-90'
-                                    : 'bg-blue-600 hover:opacity-90'
-                            } text-white rounded-lg transition`}>
-                            {currentStep === questions.length - 1 ? '결과 보기' : '다음 질문으로'}
-                        </button>
-                    </>
-                )}
-
+        <div className="w-full h-screen flex flex-col">
+            {/* 프로그래스바 */}
+            <div className="w-full max-w-3xl bg-gray-200 h-2 mt-4 mx-auto rounded">
                 <div
-                    className={`text-center p-4 rounded ${
-                        status.type === 'error'
-                            ? 'bg-red-100 text-red-600'
-                            : status.type === 'success'
-                              ? 'bg-green-100 text-green-600'
-                              : 'bg-gray-100 text-gray-800'
-                    }`}>
-                    {status.message}
+                    className="bg-blue-600 h-2 rounded transition-all duration-300"
+                    style={{ width: `${((currentStep + 1) / questions.length) * 100}%` }}></div>
+            </div>
+
+            {/* 메인 콘텐츠 */}
+            <div className="flex flex-col justify-center items-center flex-grow">
+                <div className="w-full max-w-3xl p-6 bg-white rounded-lg">
+                    <div className="flex justify-between items-center border-b pb-4 mb-4">
+                        <h1 className="text-xl font-bold">음성 대화 테스트</h1>
+                        <div>
+                            {currentStep + 1} / {questions.length}
+                        </div>
+                    </div>
+
+                    {!isStarted ? (
+                        <button
+                            onClick={startConversation}
+                            className="w-full py-3 mb-4 bg-black text-white rounded-lg hover:opacity-90 transition">
+                            대화 시작
+                        </button>
+                    ) : (
+                        <>
+                            <p className="text-center text-lg mb-4">{questions[currentStep]}</p>
+                            {!currentAnswer && (
+                                <button
+                                    onClick={retry}
+                                    className="w-full py-3 mb-4 bg-red-600 text-white rounded-lg hover:opacity-90 transition">
+                                    다시 답변하기
+                                </button>
+                            )}
+                            <button
+                                onClick={handleNextQuestion}
+                                className={`w-full py-3 mb-4 ${
+                                    currentStep === questions.length - 1
+                                        ? 'bg-green-600 hover:opacity-90'
+                                        : 'bg-blue-600 hover:opacity-90'
+                                } text-white rounded-lg transition`}>
+                                {currentStep === questions.length - 1
+                                    ? '결과 보기'
+                                    : '다음 질문으로'}
+                            </button>
+                        </>
+                    )}
+
+                    <div
+                        className={`text-center p-4 rounded ${
+                            status.type === 'error'
+                                ? 'bg-red-100 text-red-600'
+                                : status.type === 'success'
+                                  ? 'bg-green-100 text-green-600'
+                                  : 'bg-gray-100 text-gray-800'
+                        }`}>
+                        {status.message}
+                    </div>
                 </div>
             </div>
         </div>
