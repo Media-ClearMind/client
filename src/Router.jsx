@@ -1,9 +1,9 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
-import Home from '@/components/pages/Home'
-import Layout from '@/components/common/Layout'
-import LoginPage from '@/components/pages/Login'
-import SignupPage from '@/components/pages/Signup'
+import Layout from '@/components/common/layout/index'
+import LoginPage from '@/pages/Login'
+import SignupPage from '@/pages/Signup'
+import WelcomePage from '@/pages/Home'
 
 const Router = () => {
     return (
@@ -15,7 +15,7 @@ const Router = () => {
                     element={<Layout />}>
                     <Route
                         index
-                        element={<Home />}
+                        element={<WelcomePage />}
                     />
                     <Route
                         path="signup"
