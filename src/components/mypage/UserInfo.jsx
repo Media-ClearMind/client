@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+
 import axios from 'axios'
 
 const UserInfo = () => {
@@ -23,13 +24,13 @@ const UserInfo = () => {
 
             {/* 사용자 정보 */}
             <p>
-                <strong>이름:</strong> {userInfo.name}
+                <strong>이름:</strong> {dummyUserData.name}
             </p>
             <p>
-                <strong>나이:</strong> {userInfo.age}세
+                <strong>나이:</strong> {dummyUserData.age}세
             </p>
             <p>
-                <strong>성별:</strong> {userInfo.gender}
+                <strong>성별:</strong> {dummyUserData.gender}
             </p>
         </div>
     )
