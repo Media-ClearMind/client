@@ -66,14 +66,15 @@ function SignupPage() {
     const onSubmit = async e => {
         e.preventDefault()
         setError('')
-
+        
         if (!isFormValid || isLoading) return
-
+        
         setLoading(true)
-
+        
         try {
             const response = await Auth.registerUser({
-                username,
+                name: username, // username을 name으로 매핑
+                email,
                 password,
                 age: parseInt(age, 10),
                 gender,
@@ -88,6 +89,7 @@ function SignupPage() {
             setLoading(false)
         }
     }
+    
 
     return (
         <div className="flex justify-center items-center min-h-screen">
