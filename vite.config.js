@@ -1,9 +1,14 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import svgr from 'vite-plugin-svgr'
 
-// https://vitejs.dev/config/
 export default defineConfig({
-    plugins: [react()],
+    plugins: [
+        react(),
+        svgr({
+            exportAsDefault: true // ReactComponent를 named export로 설정
+        })
+    ],
     resolve: {
         alias: [
             { find: '@', replacement: '/src' },
@@ -11,8 +16,8 @@ export default defineConfig({
         ]
     },
     server: {
-        port: 5173, // 개발 서버 포트
-        host: true, // 외부 네트워크에서 접근 가능
-        strictPort: false // 포트가 이미 사용 중일 경우 다른 포트로 대체
+        port: 5173,
+        host: true,
+        strictPort: false
     }
 })
