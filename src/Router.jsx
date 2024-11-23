@@ -1,31 +1,31 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+
+import DetailPage from '@/pages/mypage/DetailPage'
 import HomePage from '@/pages/Home'
 import Layout from '@/components/common/layout/index'
 import LoginPage from '@/pages/Login'
+import Mypage from '@/pages/mypage/mypage'
 import NoFooterLayout from '@/components/common/layout/no-footer/index'
 import ProtectedRoute from '@/components/common/ProtectedRoute'
 import SignupPage from '@/pages/Signup'
 import WelcomePage from '@/pages/Main'
-import Mypage from './pages/mypage/mypage'
-import DetailPage from './pages/mypage/DetailPage'
-
 
 const Router = () => {
     return (
         <BrowserRouter>
             <Routes>
                 {/* NoFooterLayout: signup, login */}
-                <Route element={<NoFooterLayout />}>
+                <Route element={<NoFooterLayout withLoading />}>
                     <Route
-                        path={'/'}
+                        path="/"
                         element={<WelcomePage />}
                     />
                     <Route
-                        path={'/signup'}
+                        path="/signup"
                         element={<SignupPage />}
                     />
                     <Route
-                        path={'/login'}
+                        path="/login"
                         element={<LoginPage />}
                     />
                 </Route>
@@ -34,21 +34,21 @@ const Router = () => {
                 <Route
                     element={
                         <ProtectedRoute>
-                            <Layout />
+                            <Layout withLoading />
                         </ProtectedRoute>
                     }>
                     <Route
                         path="/home"
                         element={<HomePage />}
                     />
-                          <Route
-            path="/mypage"
-            element={<Mypage />}
-          />
-          <Route
-            path="/detail/:date"
-            element={<DetailPage />}
-          />
+                    <Route
+                        path="/mypage"
+                        element={<Mypage />}
+                    />
+                    <Route
+                        path="/detail/:analysis_id"
+                        element={<DetailPage />}
+                    />
                 </Route>
             </Routes>
         </BrowserRouter>
