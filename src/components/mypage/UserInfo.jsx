@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react'
 
-import axios from 'axios'
-
 const UserInfo = () => {
-    const [userInfo, setUserInfo] = useState(null)
+    const [setUserInfo] = useState(null)
 
     // 더미 데이터 (API 호출을 대신하는 더미 데이터)
     const dummyUserData = {
