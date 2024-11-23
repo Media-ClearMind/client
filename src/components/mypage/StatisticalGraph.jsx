@@ -17,13 +17,15 @@ import axios from 'axios'
 const StatisticalGraph = () => {
   const [period, setPeriod] = useState('day') // 필터 상태 관리
   const [filteredData, setFilteredData] = useState([])
+  const [analysisHistory, setAnalysisHistory] = useState([])
   const navigate = useNavigate()
   const { user_id } = useParams()
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(`api/analysis/user/${user_id}/statistics`)
+        const response = await axios.get(`api/analysis/user/${user_id}/history/period`)
+        setAnalysisHistory(response.data.analysis_history)
         setPeriod(response.data)
       } catch (error) {
         console.log(error)
@@ -70,8 +72,17 @@ const StatisticalGraph = () => {
     setPeriod(newPeriod)
   }
 
-  const handleClick = data => {
-    navigate(`/detail/${data.date}`) // 클릭한 날짜로 이동
+  // 클릭한 날짜에 맞는 분석 ID를 받아서 detail 페이지로 이동
+  const handleClick = date => {
+    const selectedAnalysis = analysisHistory.find(item => {
+      return (
+        parse(item.date, 'yyyy-MM-dd', new Date()).toLocaleDateString() ===
+        date.toLocaleDateString()
+      )
+    })
+    if (selectedAnalysis) {
+      navigate(`/detail/${selectedAnalysis.analysis_id}`) // 해당 analysis_id로 이동
+    }
   }
 
   return (
