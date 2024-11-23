@@ -14,15 +14,14 @@ export const Auth = {
     },
 
     // 로그인 API
-    async loginUser({ username, password }) {
+    async loginUser({ email, password }) {
         const url = `${BASE_URL}/api/users/login`
         return await fetchData({
             url,
             method: 'POST',
-            body: { username, password }
+            body: { email, password } // username 대신 email로 수정
         })
     }
 }
 
 export default Auth
-

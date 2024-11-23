@@ -50,7 +50,7 @@ function LoginPage() {
         setLoading(true)
 
         try {
-            const response = await Auth.loginUser({ username: email, password })
+            const response = await Auth.loginUser({ email, password }) // username 대신 email 사용
             console.log('로그인 성공:', response)
 
             localStorage.setItem('token', response.token)
