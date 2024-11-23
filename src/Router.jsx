@@ -9,7 +9,6 @@ import WelcomePage from '@/pages/Main'
 import Mypage from './pages/mypage/mypage'
 import DetailPage from './pages/mypage/DetailPage'
 
-
 const Router = () => {
     return (
         <BrowserRouter>
@@ -41,14 +40,14 @@ const Router = () => {
                         path="/home"
                         element={<HomePage />}
                     />
-                          <Route
-            path="/mypage"
-            element={<Mypage />}
-          />
-          <Route
-            path="/detail/:date"
-            element={<DetailPage />}
-          />
+                    <Route
+                        path="/mypage"
+                        element={<Mypage />}
+                    />
+                    <Route
+                        path="/detail/:analysis_id"
+                        element={<DetailPage />}
+                    />
                 </Route>
             </Routes>
         </BrowserRouter>
