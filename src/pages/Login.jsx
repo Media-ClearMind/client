@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 
 import Auth from '@/lib/api/auth'
 import { IoMdInformationCircleOutline } from 'react-icons/io'
+import LogoIcon from '@/assets/images/logo-full-transparent.png'
 import { useState } from 'react'
 
 function LoginPage() {
@@ -69,7 +70,7 @@ function LoginPage() {
                 className="w-full max-w-md bg-white rounded-lg p-6">
                 <h2 className="text-center text-2xl font-bold mb-8">
                     <img
-                        src="@/assets/images/logo-full-transparent.png"
+                        src={LogoIcon}
                         alt="Logo"
                         className="mx-auto w-[50px] h-[50px]"
                     />
