@@ -6,9 +6,8 @@ import NoFooterLayout from '@/components/common/layout/no-footer/index'
 import ProtectedRoute from '@/components/common/ProtectedRoute'
 import SignupPage from '@/pages/Signup'
 import WelcomePage from '@/pages/Main'
-import Mypage from './pages/mypage/mypage'
 import DetailPage from './pages/mypage/DetailPage'
-
+import Mypage from './pages/mypage/mypage'
 
 const Router = () => {
     return (
@@ -41,14 +40,14 @@ const Router = () => {
                         path="/home"
                         element={<HomePage />}
                     />
-                          <Route
-            path="/mypage"
-            element={<Mypage />}
-          />
-          <Route
-            path="/detail/:date"
-            element={<DetailPage />}
-          />
+                    <Route
+                        path="/mypage"
+                        element={<Mypage />}
+                    />
+                    <Route
+                        path="/detail/:date"
+                        element={<DetailPage />}
+                    />
                 </Route>
             </Routes>
         </BrowserRouter>
