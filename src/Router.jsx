@@ -1,9 +1,9 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
-import Home from './pages/Home'
-import Layout from './components/common/Layout'
-import LoginPage from './pages/Login' // LoginPage 경로를 올바르게 설정하세요.
-import SignupPage from './pages/Signup' // SignupPage 경로를 올바르게 설정하세요.
+import Home from '@/components/Home'
+import Layout from '@/components/common/Layout'
+import LoginPage from '@/components/Login'
+import SignupPage from '@/components/Signup'
 
 const Router = () => {
     return (
