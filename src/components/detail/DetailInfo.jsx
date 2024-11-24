@@ -8,32 +8,50 @@ const DetailInfo = () => {
     const [stressLevel, setStressLevel] = useState(0)
     const [emotionalState, setEmotionalState] = useState('')
 
-    const dummyDetailData = {
-        analysis_id: '12345',
-        createdAt: '2024-11-23',
-        face_confidence: 0.91,
-        emotion: {
-            angry: 0.15702912211418152,
-            disgust: 0.004910706542432308,
-            fear: 0.1376156508922577,
-            happy: 0.006351242307573557,
-            neutral: 64.16819763183594,
-            sad: 35.5252571105957,
-            surprise: 0.000641261984128505
+    const dummyDetailData = [
+        {
+            analysis_id: '12345',
+            date: '2024-11-23',
+            face_confidence: 0.91,
+            emotion: {
+                angry: 0.15702912211418152,
+                disgust: 0.004910706542432308,
+                fear: 0.1376156508922577,
+                happy: 0.006351242307573557,
+                neutral: 64.16819763183594,
+                sad: 35.5252571105957,
+                surprise: 0.000641261984128505
+            },
+            dominant_emotion: 'neutral',
+            voice_analysis: {
+                answer_score: 43
+            },
+            result: {
+                summary: '사용자는 긍정적인 감정을 나타내었으며, 스트레스 레벨은 보통 수준입니다.'
+            }
         },
-        dominant_emotion: 'neutral',
-        voice_analysis: {
-            stress_level: 5,
-            voice_confidence: 90
-        },
-        result: {
-            summary: '사용자는 긍정적인 감정을 나타내었으며, 스트레스 레벨은 보통 수준입니다.',
-            detailed_scores: {
-                category_1: 85,
-                category_2: 78
+        {
+            analysis_id: '12346',
+            date: '2024-11-23',
+            face_confidence: 0.9,
+            emotion: {
+                angry: 10,
+                disgust: 20,
+                fear: 30,
+                happy: 10,
+                neutral: 10,
+                sad: 20,
+                surprise: 5
+            },
+            dominant_emotion: 'fear',
+            voice_analysis: {
+                answer_score: 55
+            },
+            result: {
+                summary: '사용자는 부적적인 감정을 나타내었으며, 스트레스 레벨은 높음 수준입니다.'
             }
         }
-    }
+    ]
     const calculateStressLevel = emotionData => {
         // 스트레스 관련 감정들의 가중치 정의
         const stressWeights = {

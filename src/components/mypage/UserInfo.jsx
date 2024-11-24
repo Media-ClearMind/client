@@ -6,7 +6,7 @@ const UserInfo = () => {
     // 더미 데이터 (API 호출을 대신하는 더미 데이터)
     const dummyUserData = {
         email: 'user@example.com',
-        name: '홍길동',
+        nickname: '홍길동',
         age: 29,
         gender: '남성',
         occupation: '소프트웨어 개발자'
@@ -22,13 +22,16 @@ const UserInfo = () => {
 
             {/* 사용자 정보 */}
             <p>
-                <strong>이름:</strong> {dummyUserData.name}
+                <strong>이름:</strong> {dummyUserData.nickname}
             </p>
             <p>
                 <strong>나이:</strong> {dummyUserData.age}세
             </p>
             <p>
                 <strong>성별:</strong> {dummyUserData.gender}
+            </p>
+            <p>
+                <strong>직업:</strong> {dummyUserData.occupation}
             </p>
         </div>
     )

@@ -14,7 +14,8 @@ import { useNavigate } from 'react-router-dom'
 
 const StatisticalGraph = () => {
     const [period, setPeriod] = useState('day')
-    const [filteredData, setFilteredData] = useState([])
+    const [filterData, setFilteredData] = useState('')
+    const [dominantEmotion, setDominantEmotion] = useState('')
     const navigate = useNavigate()
 
     // 더미 데이터 (API 호출을 대신하는 더미 데이터)
@@ -22,28 +23,117 @@ const StatisticalGraph = () => {
         {
             analysis_id: '12345',
             date: '2024-11-23',
-            summary: '긍정적인 감정을 나타내었으며 스트레스 수준은 낮았습니다.',
-            face_score: 85,
-            voice_confidence: 90,
-            stress_level: 5
+            emotion_avg: {
+                angry: 0.15702912211418152,
+                disgust: 0.004910706542432308,
+                fear: 0.1376156508922577,
+                happy: 0.006351242307573557,
+                neutral: 64.16819763183594,
+                sad: 35.5252571105957,
+                surprise: 0.000641261984128505
+            },
+            face_confidence_avg: 90,
+            answer_score: 40
+        }
+    ]
+
+    const inputData = [
+        {
+            analysis_id: '12345',
+            date: '2024-11-23',
+            face_confidence: 0.91,
+            emotion: {
+                angry: 0.157,
+                disgust: 0.0049,
+                fear: 0.137,
+                happy: 0.0063,
+                neutral: 64.168,
+                sad: 35.525,
+                surprise: 0.0006
+            },
+            voice_analysis: {
+                answer_score: 43
+            }
         },
         {
             analysis_id: '12346',
-            date: '2024-11-22',
-            summary: '분석 결과 스트레스가 다소 높게 나타났습니다.',
-            face_score: 65,
-            voice_confidence: 72,
-            stress_level: 8
-        },
-        {
-            analysis_id: '12347',
-            date: '2024-11-21',
-            summary: '사용자는 안정적인 감정을 유지하며 분석 결과 긍정적이었습니다.',
-            face_score: 78,
-            voice_confidence: 80,
-            stress_level: 4
+            date: '2024-11-23',
+            face_confidence: 0.9,
+            emotion: {
+                angry: 10,
+                disgust: 20,
+                fear: 30,
+                happy: 10,
+                neutral: 10,
+                sad: 20,
+                surprise: 5
+            },
+            dominant_emotion: 'fear',
+            voice_analysis: {
+                answer_score: 55
+            }
         }
     ]
+
+    const handleDominantEmotion = emotionData => {
+        if (!emotionData || Object.keys(emotionData).length === 0) return
+
+        // `emotionData`에서 가장 높은 값을 가진 감정을 찾음
+        const maxEmotion = Object.entries(emotionData).reduce(
+            (max, [emotion, value]) => (value > max.value ? { emotion, value } : max),
+            { emotion: '', value: -Infinity }
+        )
+
+        // 상태 업데이트
+        setDominantEmotion(maxEmotion.emotion)
+    }
+
+    //deepface 결과와 voice의 결과에 따른 각각의 점수를 매긴 뒤 총점 계산
+    const calculateEmotionScore = emotion_avg => {
+        const emotionWeights = {
+            angry: -0.2,
+            disgust: -0.1,
+            fear: -0.3,
+            happy: 0.2,
+            neutral: 0.1,
+            sad: -0.4,
+            surprise: 0
+        }
+
+        const totalEmotionScore = Object.entries(emotion_avg).reduce((score, [emotion, value]) => {
+            const weight = emotionWeights[emotion] || 0
+            return score + weight * value
+        }, 0)
+
+        // 감정 점수를 0~100으로 정규화
+        return Math.max(0, Math.min(100, 100 + totalEmotionScore / 10))
+    }
+
+    const calculateTotalScore = data => {
+        const emotion_score = calculateEmotionScore(data.emotion)
+        const confidence_score = Math.min(100, data.face_confidence * 100) // 0~1을 0~100으로 변환
+        const answer_score = Math.min(100, data.voice_analysis.answer_score) // 이미 0~100
+
+        // 가중치 합산
+        const totalScore =
+            emotion_score * 0.5 + // 감정 분석: 50%
+            confidence_score * 0.2 + // 얼굴 신뢰도: 20%
+            answer_score * 0.3 // 설문 점수: 30%
+
+        return Math.round(totalScore) // 소수점 반올림
+    }
+
+    const calculateFinalScoreForDate = dataList => {
+        if (!dataList || dataList.length === 0) return 0
+
+        // 같은 날짜의 데이터를 필터링
+        const scores = dataList.map(data => calculateTotalScore(data))
+        const finalScore = scores.reduce((sum, score) => sum + score, 0) / scores.length
+
+        return Math.round(finalScore)
+    }
+
+    const finalScore = calculateFinalScoreForDate(inputData)
 
     const filterData = (data, period) => {
         const today = new Date('2024-11-23')
@@ -111,8 +201,8 @@ const StatisticalGraph = () => {
             <ResponsiveContainer
                 width="100%"
                 height={400}>
-                {filteredData.length > 0 ? (
-                    <LineChart data={filteredData}>
+                {finalScore.length > 0 ? (
+                    <LineChart data={finalScore}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="date" />
                         <YAxis />
