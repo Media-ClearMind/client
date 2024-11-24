@@ -3,6 +3,7 @@ import 'moment/locale/ko'
 import React, { useEffect, useRef, useState } from 'react'
 
 import { Link } from 'react-router-dom'
+import LogoIcon from '@/assets/images/logo-full-transparent.png'
 import moment from 'moment'
 
 moment.locale('ko')
@@ -61,9 +62,16 @@ const HomePage = ({ user = { displayName: '익명' } }) => {
         <div className="flex flex-col h-screen bg-gray-50 text-black">
             {/* Header */}
             <header className="flex justify-between items-center px-8 py-6">
-                <div className="text-2xl font-bold text-blue-600">Logo</div>
+                <div className="text-2xl font-bold text-blue-600">
+                    {' '}
+                    <img
+                        src={LogoIcon}
+                        alt="Logo"
+                        className="mx-auto w-[35px] h-[35px]"
+                    />
+                </div>
                 <Link
-                    to="/start"
+                    to="/analysis"
                     className="text-blue-600 hover:text-blue-700">
                     Start
                 </Link>

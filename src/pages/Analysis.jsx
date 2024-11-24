@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
+
+import { fetchData } from '@/lib/api/util' // fetchData 유틸 함수
 
 const VoiceChat = () => {
     const [currentStep, setCurrentStep] = useState(0)
@@ -8,12 +10,49 @@ const VoiceChat = () => {
     const [isStarted, setIsStarted] = useState(false)
     const [responses, setResponses] = useState([])
     const [isFinished, setIsFinished] = useState(false)
+    const [errorMsg, setErrorMsg] = useState('')
+
+    const videoRef = useRef(null)
 
     const questions = [
         '오늘 기분은 어떠신가요?',
         '주말에는 주로 무엇을 하시나요?',
         '가장 좋아하는 음식은 무엇인가요?'
     ]
+
+    const startCamera = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream
+                setErrorMsg('')
+            }
+        } catch (error) {
+            setErrorMsg('카메라 접근 권한이 필요합니다.')
+            console.error('카메라 에러:', error)
+        }
+    }
+
+    const stopCamera = () => {
+        if (videoRef.current?.srcObject) {
+            const tracks = videoRef.current.srcObject.getTracks()
+            tracks.forEach(track => track.stop())
+            videoRef.current.srcObject = null
+        }
+    }
+
+    useEffect(() => {
+        startCamera()
+        return () => {
+            stopCamera()
+        }
+    }, [])
+
+    useEffect(() => {
+        if (isFinished) {
+            stopCamera()
+        }
+    }, [isFinished])
 
     const updateStatus = (message, type = 'normal', isListening = false) => {
         setStatus({ message, type, isListening })
@@ -95,6 +134,37 @@ const VoiceChat = () => {
         await listen()
     }
 
+    const captureImage = () => {
+        if (!videoRef.current) return null
+
+        const canvas = document.createElement('canvas')
+        canvas.width = videoRef.current.videoWidth
+        canvas.height = videoRef.current.videoHeight
+
+        const context = canvas.getContext('2d')
+        context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height)
+
+        return canvas.toDataURL('image/jpeg') // Base64로 변환
+    }
+
+    const sendImagesToServer = async (startImage, endImage, count) => {
+        try {
+            const response = await fetchData({
+                url: `${process.env.NEXT_PUBLIC_API_URL}/analyze`,
+                method: 'POST',
+                body: {
+                    startImage,
+                    endImage,
+                    count
+                }
+            })
+
+            console.log('Server response:', response)
+        } catch (error) {
+            console.error('Error sending images to server:', error)
+        }
+    }
+
     const handleNextQuestion = async () => {
         stopRecognition()
 
@@ -114,15 +184,21 @@ const VoiceChat = () => {
             await startQuestion(currentStep + 1)
         } else {
             updateStatus('모든 대화가 완료되었습니다.', 'success')
-            setIsFinished(true) // 대화 종료 플래그 설정
+            setIsFinished(true)
             setIsStarted(false)
         }
     }
 
     const startQuestion = async stepIndex => {
         try {
+            const startImage = captureImage() // 질문 시작 시 이미지 캡처
+
             await speak(questions[stepIndex])
             await listen()
+
+            const endImage = captureImage() // 답변 완료 시 이미지 캡처
+
+            await sendImagesToServer(startImage, endImage, stepIndex + 1) // 서버 전송
         } catch (error) {
             console.error('Question error:', error)
         }
@@ -146,13 +222,6 @@ const VoiceChat = () => {
             setIsStarted(false)
         }
     }
-
-    useEffect(() => {
-        return () => {
-            stopRecognition()
-            speechSynthesis.cancel()
-        }
-    }, [])
 
     if (isFinished) {
         return (
@@ -179,14 +248,12 @@ const VoiceChat = () => {
 
     return (
         <div className="w-full h-screen flex flex-col">
-            {/* 프로그래스바 */}
             <div className="w-full max-w-3xl bg-gray-200 h-2 mt-4 mx-auto rounded">
                 <div
                     className="bg-blue-600 h-2 rounded transition-all duration-300"
                     style={{ width: `${((currentStep + 1) / questions.length) * 100}%` }}></div>
             </div>
 
-            {/* 메인 콘텐츠 */}
             <div className="flex flex-col justify-center items-center flex-grow">
                 <div className="w-full max-w-3xl p-6 bg-white rounded-lg">
                     <div className="flex justify-between items-center border-b pb-4 mb-4">
@@ -235,6 +302,21 @@ const VoiceChat = () => {
                                   : 'bg-gray-100 text-gray-800'
                         }`}>
                         {status.message}
+                    </div>
+
+                    {/* 카메라 화면 */}
+                    <div className="relative bg-gray-100 rounded-lg overflow-hidden mt-4">
+                        {errorMsg && (
+                            <div className="absolute inset-0 flex items-center justify-center text-red-500">
+                                {errorMsg}
+                            </div>
+                        )}
+                        <video
+                            ref={videoRef}
+                            className="w-full h-[400px] object-cover transform scale-x-[-1]"
+                            autoPlay
+                            playsInline
+                        />
                     </div>
                 </div>
             </div>
