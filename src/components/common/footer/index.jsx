@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import HomeIcons from '@/assets/icons/home-icon.svg?url'
 import MapIcons from '@/assets/icons/map-icon.svg?url'
 import PaperIcons from '@/assets/icons/paper-icon.svg?url'
-import ProfileIcons from '@/assets/icons/profile-icon.svg?url'
+import ProfileIcons from '@/assets/icons/user-icon.svg?url'
 
 const NavItemContainer = ({ path, title, icon }) => {
     const location = useLocation()
@@ -35,18 +35,13 @@ const Footer = () => {
                     icon={HomeIcons}
                 />
                 <NavItemContainer
-                    path="/setting"
-                    title="SETTING"
+                    path="/analysis"
+                    title="ANALYSIS"
                     icon={PaperIcons}
                 />
                 <NavItemContainer
-                    path="/kakaomap"
-                    title="MAP"
-                    icon={MapIcons}
-                />
-                <NavItemContainer
                     path="/mypage"
-                    title="PROFILE"
+                    title="MYPAGE"
                     icon={ProfileIcons}
                 />
             </nav>
