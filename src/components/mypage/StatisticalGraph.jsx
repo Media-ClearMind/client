@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { parse, startOfWeek, startOfMonth, isWithinInterval, endOfWeek, endOfMonth } from 'date-fns'
 import {
     LineChart,
     Line,
@@ -11,26 +10,13 @@ import {
     ResponsiveContainer
 } from 'recharts'
 import { useNavigate } from 'react-router-dom'
-import { data } from './data'
+import axios from 'axios'
 
 const StatisticalGraph = () => {
     const [period, setPeriod] = useState('day')
     const [filteredData, setFilteredData] = useState('')
-    const [dominantEmotion, setDominantEmotion] = useState('')
+    const [loading, setLoading] = useState(false)
     const navigate = useNavigate()
-
-    const handleDominantEmotion = emotionData => {
-        if (!emotionData || Object.keys(emotionData).length === 0) return
-
-        // `emotionData`에서 가장 높은 값을 가진 감정을 찾음
-        const maxEmotion = Object.entries(emotionData).reduce(
-            (max, [emotion, value]) => (value > max.value ? { emotion, value } : max),
-            { emotion: '', value: -Infinity }
-        )
-
-        // 상태 업데이트
-        setDominantEmotion(maxEmotion.emotion)
-    }
 
     const calculateTotalScore = item => {
         // 감정 점수 계산
@@ -128,18 +114,59 @@ const StatisticalGraph = () => {
             .sort((a, b) => new Date(a.date) - new Date(b.date))
     }
 
+    const fetchData = async () => {
+        setLoading(true)
+        try {
+            const response = await axios.get(`/api/interviews/analysis/averages`, {
+                params: { period }
+            })
+            const processed = processDataByPeriod(response.data, period)
+            setFilteredData(processed)
+        } catch (error) {
+            console.log(error)
+            setFilteredData([])
+        } finally {
+            setLoading(false)
+        }
+    }
+
     useEffect(() => {
-        const processed = processDataByPeriod(data, period)
-        setFilteredData(processed)
+        fetchData()
     }, [period])
 
     const handleChangePeriod = newPeriod => {
         setPeriod(newPeriod)
     }
 
-    const handleClick = data => {
-        navigate(`/detail/${data.analysis_id}`)
+    const CustomTooltip = ({ active, payload, label }) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="bg-white p-4 border rounded shadow-lg">
+                    <p className="text-sm text-gray-600">{`Date: ${label}`}</p>
+                    <p className="text-sm font-bold text-blue-600">
+                        {`Score: ${payload[0].value}`}
+                    </p>
+                </div>
+            )
+        }
+        return null
     }
+
+    const handleClick = (data, index) => {
+        if (data && data.activePayload && data.activePayload[0]) {
+            const clickedData = data.activePayload[0].payload
+            if (clickedData.analysis_ids && clickedData.analysis_ids.length > 0) {
+                navigate(`/detail/${clickedData.analysis_ids[0]}`)
+            }
+        }
+    }
+
+    if (loading)
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <div className="text-xl text-gray-600">로딩 중...</div>
+            </div>
+        )
 
     return (
         <div className="p-6 bg-gray-50 rounded-lg shadow-lg">
@@ -202,7 +229,7 @@ const StatisticalGraph = () => {
                                 offset: 10
                             }}
                         />
-                        {/* <Tooltip content={<CustomTooltip />} /> */}
+                        <Tooltip content={<CustomTooltip />} />
                         <Legend />
                         <Line
                             type="monotone"

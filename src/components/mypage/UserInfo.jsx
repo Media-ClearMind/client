@@ -16,7 +16,6 @@ const UserInfo = () => {
     useEffect(() => {
         fetchData()
     }, [])
-
     if (!userinfo) {
         return <div>로딩 중...</div>
     }

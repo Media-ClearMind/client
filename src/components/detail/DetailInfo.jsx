@@ -1,13 +1,28 @@
+import axios from 'axios'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts'
-import { data } from '../mypage/data'
 
 const DetailInfo = () => {
     const { analysis_id } = useParams()
+    const [loading, setLoading] = useState(true)
     const [analysisData, setAnalysisData] = useState(null)
+    const [dominantEmotion, setDominantEmotion] = useState('')
     const [stressLevel, setStressLevel] = useState(0)
     const [emotionalState, setEmotionalState] = useState('')
+
+    const handleDominantEmotion = emotionData => {
+        if (!emotionData || Object.keys(emotionData).length === 0) return
+
+        // `emotionData`에서 가장 높은 값을 가진 감정을 찾음
+        const maxEmotion = Object.entries(emotionData).reduce(
+            (max, [emotion, value]) => (value > max.value ? { emotion, value } : max),
+            { emotion: '', value: -Infinity }
+        )
+
+        // 상태 업데이트
+        setDominantEmotion(maxEmotion.emotion)
+    }
 
     const calculateStressLevel = emotionData => {
         // 스트레스 관련 감정들의 가중치 정의
@@ -70,6 +85,8 @@ const DetailInfo = () => {
         } else {
             console.error('Analysis data not found!')
         }
+
+        fetchData()
     }, [analysis_id])
 
     const getStressLevelCategory = level => {
@@ -90,8 +107,6 @@ const DetailInfo = () => {
         : []
 
     const COLORS = ['#FF6347', '#FFD700', '#98FB98', '#87CEFA', '#FF69B4', '#D2691E', '#8A2BE2']
-
-    if (!analysisData) return <div className="p-4">로딩 중...</div>
 
     const renderCustomizedLabel = ({
         cx,
@@ -118,6 +133,13 @@ const DetailInfo = () => {
             </text>
         ) : null
     }
+
+    if (loading)
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <div className="text-xl text-gray-600">로딩 중...</div>
+            </div>
+        )
 
     return (
         <div className="h-screen overflow-y-auto bg-gray-100">
@@ -168,7 +190,7 @@ const DetailInfo = () => {
                             </p>
                             <p>
                                 <strong>주요 감정 상태:</strong>{' '}
-                                <span className="capitalize">{analysisData.dominant_emotion}</span>
+                                <span className="capitalize">{dominantEmotion}</span>
                             </p>
                             <p>
                                 <strong>감정 상태 해석:</strong>{' '}

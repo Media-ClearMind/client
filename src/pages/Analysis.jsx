@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 
+import IntroImage from '@/assets/images/home_pogny.png' // 인트로 이미지
 import { fetchData } from '@/lib/api/util' // fetchData 유틸 함수
 
 const VoiceChat = () => {
@@ -11,6 +12,7 @@ const VoiceChat = () => {
     const [responses, setResponses] = useState([])
     const [isFinished, setIsFinished] = useState(false)
     const [errorMsg, setErrorMsg] = useState('')
+    const [isIntroStep, setIsIntroStep] = useState(true) // 시작 단계 상태
 
     const videoRef = useRef(null)
 
@@ -21,14 +23,29 @@ const VoiceChat = () => {
     ]
 
     const startCamera = async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            setErrorMsg('이 브라우저는 카메라를 지원하지 않습니다.')
+            console.error('mediaDevices 또는 getUserMedia가 지원되지 않습니다.')
+            return
+        }
+
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false
+            })
             if (videoRef.current) {
                 videoRef.current.srcObject = stream
                 setErrorMsg('')
             }
         } catch (error) {
-            setErrorMsg('카메라 접근 권한이 필요합니다.')
+            if (error.name === 'NotAllowedError') {
+                setErrorMsg('카메라 접근이 허용되지 않았습니다.')
+            } else if (error.name === 'NotFoundError') {
+                setErrorMsg('사용 가능한 카메라가 없습니다.')
+            } else {
+                setErrorMsg('카메라 접근 중 문제가 발생했습니다.')
+            }
             console.error('카메라 에러:', error)
         }
     }
@@ -42,11 +59,13 @@ const VoiceChat = () => {
     }
 
     useEffect(() => {
-        startCamera()
+        if (!isIntroStep) {
+            startCamera()
+        }
         return () => {
             stopCamera()
         }
-    }, [])
+    }, [isIntroStep])
 
     useEffect(() => {
         if (isFinished) {
@@ -147,21 +166,24 @@ const VoiceChat = () => {
         return canvas.toDataURL('image/jpeg') // Base64로 변환
     }
 
-    const sendImagesToServer = async (startImage, endImage, count) => {
+    const sendImageToServer = async (image, count) => {
         try {
+            const userId = localStorage.getItem('userId') // 로컬스토리지에서 userId 가져오기
+            const url = `${import.meta.env.VITE_API_URL}/analyze`
+
             const response = await fetchData({
-                url: `${process.env.NEXT_PUBLIC_API_URL}/analyze`,
+                url,
                 method: 'POST',
                 body: {
-                    startImage,
-                    endImage,
-                    count
+                    image,
+                    count: 1, // 항상 1로 고정
+                    userId
                 }
             })
 
             console.log('Server response:', response)
         } catch (error) {
-            console.error('Error sending images to server:', error)
+            console.error('Error sending image to server:', error)
         }
     }
 
@@ -192,13 +214,13 @@ const VoiceChat = () => {
     const startQuestion = async stepIndex => {
         try {
             const startImage = captureImage() // 질문 시작 시 이미지 캡처
+            await sendImageToServer(startImage, stepIndex + 1) // 시작 이미지 전송
 
             await speak(questions[stepIndex])
             await listen()
 
-            const endImage = captureImage() // 답변 완료 시 이미지 캡처
-
-            await sendImagesToServer(startImage, endImage, stepIndex + 1) // 서버 전송
+            const endImage = captureImage() // 질문 끝날 때 이미지 캡처
+            await sendImageToServer(endImage, stepIndex + 1) // 끝 이미지 전송
         } catch (error) {
             console.error('Question error:', error)
         }
@@ -223,6 +245,24 @@ const VoiceChat = () => {
         }
     }
 
+    if (isIntroStep) {
+        return (
+            <div className="w-full h-screen flex flex-col justify-center items-center">
+                <h1 className="text-2xl font-bold mb-8 text-gray-800">인지능력 검사하기</h1>
+                <img
+                    src={IntroImage} // 적절한 이미지 경로로 대체하세요.
+                    alt="인지능력 테스트"
+                    className="w-[300px] h-[300px] mb-8"
+                />
+                <button
+                    onClick={() => setIsIntroStep(false)}
+                    className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+                    시작하기
+                </button>
+            </div>
+        )
+    }
+
     if (isFinished) {
         return (
             <div className="w-full h-screen flex justify-center items-center">
@@ -238,7 +278,7 @@ const VoiceChat = () => {
                     ))}
                     <button
                         onClick={startConversation}
-                        className="w-full py-3 mt-6 bg-blue-600 text-white rounded-lg hover:opacity-90 transition">
+                        className="w-full py-3 mt-6 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                         다시 시작하기
                     </button>
                 </div>
@@ -304,7 +344,6 @@ const VoiceChat = () => {
                         {status.message}
                     </div>
 
-                    {/* 카메라 화면 */}
                     <div className="relative bg-gray-100 rounded-lg overflow-hidden mt-4">
                         {errorMsg && (
                             <div className="absolute inset-0 flex items-center justify-center text-red-500">
