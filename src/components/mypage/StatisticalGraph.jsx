@@ -243,7 +243,7 @@ const StatisticalGraph = () => {
                     </LineChart>
                 ) : (
                     <div className="flex items-center justify-center h-full">
-                        <p className="text-gray-500">No data available for this period.</p>
+                        <p className="text-gray-500">데이터가 없습니다.</p>
                     </div>
                 )}
             </ResponsiveContainer>
