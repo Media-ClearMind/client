@@ -21,7 +21,7 @@ const StatisticalGraph = () => {
     const dummyAnalysisHistory = [
         {
             analysis_id: '12345',
-            date: '2024-11-23T15:38:08.338Z',
+            date: '2024-11-23',
             summary: '긍정적인 감정을 나타내었으며 스트레스 수준은 낮았습니다.',
             face_score: 85,
             voice_confidence: 90,
@@ -29,7 +29,7 @@ const StatisticalGraph = () => {
         },
         {
             analysis_id: '12346',
-            date: '2024-11-22T12:30:00.000Z',
+            date: '2024-11-22',
             summary: '분석 결과 스트레스가 다소 높게 나타났습니다.',
             face_score: 65,
             voice_confidence: 72,
@@ -37,7 +37,7 @@ const StatisticalGraph = () => {
         },
         {
             analysis_id: '12347',
-            date: '2024-11-21T08:45:10.000Z',
+            date: '2024-11-21',
             summary: '사용자는 안정적인 감정을 유지하며 분석 결과 긍정적이었습니다.',
             face_score: 78,
             voice_confidence: 80,
