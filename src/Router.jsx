@@ -8,6 +8,7 @@ import Mypage from '@/pages/mypage/Mypage'
 import NoFooterLayout from '@/components/common/layout/no-footer/index'
 import ProtectedRoute from '@/components/common/ProtectedRoute'
 import SignupPage from '@/pages/Signup'
+import VoiceChat from '@/pages/Analysis'
 import WelcomePage from '@/pages/Main'
 
 const Router = () => {
@@ -39,7 +40,7 @@ const Router = () => {
                     }>
                     <Route
                         path="/home"
-                        element={<HomePage />}
+                        element={<HomePage user={{ displayName: '김민태' }} />}
                     />
                     <Route
                         path="/mypage"
@@ -48,6 +49,10 @@ const Router = () => {
                     <Route
                         path="/detail/:analysis_id"
                         element={<DetailPage />}
+                    />
+                    <Route
+                        path="/analysis"
+                        element={<VoiceChat />}
                     />
                 </Route>
             </Routes>
