@@ -127,92 +127,95 @@ const DetailInfo = () => {
     }
 
     return (
-        <div className="max-w-4xl mx-auto p-6 bg-white shadow-md rounded-md">
-            <h1 className="text-2xl font-bold mb-4 text-gray-800">분석 디테일 페이지</h1>
+        <div className="h-screen overflow-y-auto bg-gray-100">
+            <div className="max-w-4xl mx-auto p-6 bg-white shadow-md rounded-md relative">
+                <h1 className="text-2xl font-bold mb-4 text-gray-800 sticky top-0 bg-white z-10 py-4 border-b">
+                    분석 디테일 페이지
+                </h1>
 
-            <section className="mb-8">
-                <h2 className="text-xl font-semibold mb-3 text-gray-700">감정 분포</h2>
-                <div className="flex justify-center">
-                    <PieChart
-                        width={500}
-                        height={400}>
-                        <Pie
-                            data={pieData}
-                            dataKey="value"
-                            nameKey="name"
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={160}
-                            innerRadius={100}
-                            fill="#8884d8"
-                            labelLine={false}
-                            label={renderCustomizedLabel}>
-                            {pieData.map((entry, index) => (
-                                <Cell
-                                    key={`cell-${index}`}
-                                    fill={COLORS[index % COLORS.length]}
-                                />
-                            ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend
-                            verticalAlign="bottom"
-                            height={36}
-                        />
-                    </PieChart>
-                </div>
-            </section>
-
-            <section className="mb-6">
-                <h2 className="text-xl font-semibold mb-3 text-gray-700">분석 요약 정보</h2>
-                <div className="space-y-4 text-gray-600">
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                        <p>
-                            <strong>분석 일자:</strong>{' '}
-                            {new Date(analysisData.createdAt).toLocaleDateString('ko-KR')}
-                        </p>
-                        <p>
-                            <strong>주요 감정 상태:</strong>{' '}
-                            <span className="capitalize">{analysisData.dominant_emotion}</span>
-                        </p>
-                        <p>
-                            <strong>감정 상태 해석:</strong>{' '}
-                            <span className="text-blue-600">{emotionalState}</span>
-                        </p>
+                <section className="mb-8">
+                    <h2 className="text-xl font-semibold mb-3 text-gray-700">감정 분포</h2>
+                    <div className="flex justify-center">
+                        <PieChart
+                            width={500}
+                            height={400}>
+                            <Pie
+                                data={pieData}
+                                dataKey="value"
+                                nameKey="name"
+                                cx="50%"
+                                cy="50%"
+                                outerRadius={160}
+                                innerRadius={100}
+                                fill="#8884d8"
+                                labelLine={false}
+                                label={renderCustomizedLabel}>
+                                {pieData.map((entry, index) => (
+                                    <Cell
+                                        key={`cell-${index}`}
+                                        fill={COLORS[index % COLORS.length]}
+                                    />
+                                ))}
+                            </Pie>
+                            <Tooltip />
+                            <Legend
+                                verticalAlign="bottom"
+                                height={36}
+                            />
+                        </PieChart>
                     </div>
+                </section>
 
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                        <p>
-                            <strong>얼굴 인식 신뢰도:</strong>{' '}
-                            <span className="text-blue-600">
-                                {(analysisData.face_confidence * 100).toFixed(1)}%
-                            </span>
-                        </p>
-                        <p>
-                            <strong>스트레스 레벨:</strong>{' '}
-                            <span className={stressCategory.color}>
-                                {stressLevel}% ({stressCategory.text})
-                            </span>
-                        </p>
-                    </div>
+                <section className="mb-6">
+                    <h2 className="text-xl font-semibold mb-3 text-gray-700">분석 요약 정보</h2>
+                    <div className="space-y-4 text-gray-600">
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <p>
+                                <strong>분석 일자:</strong> {analysisData.date}
+                            </p>
+                            <p>
+                                <strong>주요 감정 상태:</strong>{' '}
+                                <span className="capitalize">{analysisData.dominant_emotion}</span>
+                            </p>
+                            <p>
+                                <strong>감정 상태 해석:</strong>{' '}
+                                <span className="text-blue-600">{emotionalState}</span>
+                            </p>
+                        </div>
 
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="font-semibold mb-2">스트레스 관리 권장사항:</p>
-                        <p className="text-sm">
-                            {parseFloat(stressLevel) > 60
-                                ? '현재 스트레스 수준이 높습니다. 전문가와의 상담을 고려해보세요.'
-                                : parseFloat(stressLevel) > 40
-                                  ? '적절한 휴식과 스트레스 관리가 필요합니다.'
-                                  : '현재 스트레스 수준이 양호합니다. 현재의 상태를 유지하세요.'}
-                        </p>
-                    </div>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <p>
+                                <strong>얼굴 인식 신뢰도:</strong>{' '}
+                                <span className="text-blue-600">
+                                    {(analysisData.face_confidence * 100).toFixed(1)}%
+                                </span>
+                            </p>
+                            <p>
+                                <strong>스트레스 레벨:</strong>{' '}
+                                <span className={stressCategory.color}>
+                                    {stressLevel}% ({stressCategory.text})
+                                </span>
+                            </p>
+                        </div>
 
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="font-semibold">종합 분석:</p>
-                        <p>{analysisData.result.summary}</p>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="font-semibold mb-2">스트레스 관리 권장사항:</p>
+                            <p className="text-sm">
+                                {parseFloat(stressLevel) > 60
+                                    ? '현재 스트레스 수준이 높습니다. 전문가와의 상담을 고려해보세요.'
+                                    : parseFloat(stressLevel) > 40
+                                      ? '적절한 휴식과 스트레스 관리가 필요합니다.'
+                                      : '현재 스트레스 수준이 양호합니다. 현재의 상태를 유지하세요.'}
+                            </p>
+                        </div>
+
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="font-semibold">종합 분석:</p>
+                            <p>{analysisData.result.summary}</p>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            </div>
         </div>
     )
 }
