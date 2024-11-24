@@ -1,37 +1,40 @@
+import axios from 'axios'
 import { useEffect, useState } from 'react'
 
 const UserInfo = () => {
-    const [setUserInfo] = useState(null)
+    const [userinfo, setUserInfo] = useState()
 
-    // 더미 데이터 (API 호출을 대신하는 더미 데이터)
-    const dummyUserData = {
-        email: 'user@example.com',
-        nickname: '홍길동',
-        age: 29,
-        gender: '남성',
-        occupation: '소프트웨어 개발자'
+    const fetchData = async () => {
+        try {
+            const response = await axios.get(`/api/users/profile`)
+            setUserInfo(response.data)
+        } catch (error) {
+            console.log(error)
+        }
     }
 
     useEffect(() => {
-        setUserInfo(dummyUserData)
+        fetchData()
     }, [])
 
-    return (
-        <div className="max-w-md mx-auto p-6 bg-white shadow-md rounded-md">
-            <h2 className="text-xl font-semibold mb-3">사용자 정보</h2>
+    if (!userinfo) {
+        return <div>로딩 중...</div>
+    }
 
+    return (
+        <div className="max-w-md mx-auto p-6 bg-white text-black shadow-md rounded-md">
             {/* 사용자 정보 */}
             <p>
-                <strong>이름:</strong> {dummyUserData.nickname}
+                <strong>이름:</strong> {userinfo.nickname}
             </p>
             <p>
-                <strong>나이:</strong> {dummyUserData.age}세
+                <strong>나이:</strong> {userinfo.age}세
             </p>
             <p>
-                <strong>성별:</strong> {dummyUserData.gender}
+                <strong>성별:</strong> {userinfo.gender}
             </p>
             <p>
-                <strong>직업:</strong> {dummyUserData.occupation}
+                <strong>직업:</strong> {userinfo.occupation}
             </p>
         </div>
     )
