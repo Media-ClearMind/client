@@ -16,11 +16,12 @@ const UserInfo = () => {
     useEffect(() => {
         fetchData()
     }, [])
-  
-    return (
-        <div className="max-w-md mx-auto p-6 bg-white shadow-md rounded-md">
-            <h2 className="text-xl font-semibold mb-3">사용자 정보</h2>
+    if (!userinfo) {
+        return <div>로딩 중...</div>
+    }
 
+    return (
+        <div className="max-w-md mx-auto p-6 bg-white text-black shadow-md rounded-md">
             {/* 사용자 정보 */}
             <p>
                 <strong>이름:</strong> {userinfo.nickname}
