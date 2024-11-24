@@ -1,4 +1,3 @@
-import axios from 'axios'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts'
@@ -26,7 +25,6 @@ const DetailInfo = () => {
     }
 
     const calculateStressLevel = emotionData => {
-        // 스트레스 관련 감정들의 가중치 정의
         const stressWeights = {
             angry: 0.8,
             fear: 0.7,
@@ -38,12 +36,19 @@ const DetailInfo = () => {
         }
 
         // 가중치를 적용한 스트레스 점수 계산
-        let stressScore = Object.entries(emotionData).reduce((score, [emotion, value]) => {
-            return score + value * (stressWeights[emotion] || 0)
-        }, 0)
+        const weightedSum = Object.entries(emotionData).reduce(
+            (sum, [emotion, value]) => sum + value * (stressWeights[emotion] || 0),
+            0
+        )
 
-        // 0-100 범위로 정규화
-        return Math.min(100, Math.max(0, (stressScore / 2) * 100))
+        // 감정 값 합산 (전체 합계)
+        const totalEmotionValue = Object.values(emotionData).reduce((sum, value) => sum + value, 0)
+
+        // 스트레스 비율 계산 (전체 감정 값에 대한 비율로 환산)
+        const stressLevel = (weightedSum / totalEmotionValue) * 100
+
+        // 0-100 사이 값으로 정규화
+        return Math.min(100, Math.max(0, stressLevel))
     }
 
     const analyzeEmotionalState = emotionData => {
@@ -73,10 +78,11 @@ const DetailInfo = () => {
             const calculatedStress = calculateStressLevel(selectedData.emotion_avg)
             setStressLevel(calculatedStress.toFixed(1))
             setEmotionalState(analyzeEmotionalState(selectedData.emotion_avg))
-            handleDominantEmotion()
+            handleDominantEmotion(selectedData.emotion_avg)
         } else {
             console.error('Analysis data not found!')
         }
+        setLoading(false)
     }, [analysis_id])
 
     const getStressLevelCategory = level => {
@@ -192,7 +198,7 @@ const DetailInfo = () => {
                             <p>
                                 <strong>얼굴 인식 신뢰도:</strong>{' '}
                                 <span className="text-blue-600">
-                                    {(analysisData.face_confidence * 100).toFixed(1)}%
+                                    {analysisData.face_confidence.toFixed(1)}%
                                 </span>
                             </p>
                             <p>
@@ -214,10 +220,9 @@ const DetailInfo = () => {
                             </p>
                         </div>
 
-                        <div className="bg-gray-50 p-4 rounded-lg">
+                        {/* <div className="bg-gray-50 p-4 rounded-lg">
                             <p className="font-semibold">종합 분석:</p>
-                            <p>{analysisData.result.summary}</p>
-                        </div>
+                        </div> */}
                     </div>
                 </section>
             </div>

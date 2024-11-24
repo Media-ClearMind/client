@@ -109,7 +109,8 @@ const StatisticalGraph = () => {
                     group.totalScores.reduce((sum, score) => sum + score, 0) /
                         group.totalScores.length
                 ),
-                itemCount: group.items.length
+                itemCount: group.items.length,
+                analysis_id: group.items[0]?.analysis_id
             }))
             .sort((a, b) => new Date(a.date) - new Date(b.date))
     }
@@ -158,13 +159,8 @@ const StatisticalGraph = () => {
         return null
     }
 
-    const handleClick = (data, index) => {
-        if (data && data.activePayload && data.activePayload[0]) {
-            const clickedData = data.activePayload[0].payload
-            if (clickedData.analysis_ids && clickedData.analysis_ids.length > 0) {
-                navigate(`/detail/${clickedData.analysis_ids[0]}`)
-            }
-        }
+    const handleClick = analysisID => {
+        navigate(`/detail/${analysisID}`)
     }
 
     if (loading)
@@ -210,7 +206,15 @@ const StatisticalGraph = () => {
                 {filteredData.length > 0 ? (
                     <LineChart
                         data={filteredData}
-                        onClick={handleClick}
+                        onClick={e => {
+                            if (e?.activePayload?.[0]?.payload) {
+                                const clickedData = e.activePayload[0].payload
+                                const analysisId = clickedData?.analysis_id // 클릭된 데이터의 analysis_id
+                                if (analysisId) {
+                                    handleClick(analysisId)
+                                }
+                            }
+                        }}
                         margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
