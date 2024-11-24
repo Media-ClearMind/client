@@ -2,8 +2,10 @@ import React, { useEffect, useRef, useState } from 'react'
 
 import IntroImage from '@/assets/images/home_pogny.png' // 인트로 이미지
 import { fetchData } from '@/lib/api/util' // fetchData 유틸 함수
+import { useNavigate } from 'react-router-dom'
 
 const VoiceChat = () => {
+    const navigate = useNavigate() // 페이지 이동을 위한 useNavigate 훅
     const [currentStep, setCurrentStep] = useState(0)
     const [recognition, setRecognition] = useState(null)
     const [currentAnswer, setCurrentAnswer] = useState(null)
@@ -17,9 +19,9 @@ const VoiceChat = () => {
     const videoRef = useRef(null)
 
     const questions = [
-        '오늘 기분은 어떠신가요?',
-        '주말에는 주로 무엇을 하시나요?',
-        '가장 좋아하는 음식은 무엇인가요?'
+        '100에서 7을 계속 빼보세요. 100, 93, 그다음은?',
+        '오늘이 무슨 요일인지, 지금 몇 월인지 말씀해 주세요.',
+        '길을 걷다가 친구가 넘어졌다면, 어떻게 도와줄까요?'
     ]
 
     const startCamera = async () => {
@@ -247,7 +249,9 @@ const VoiceChat = () => {
 
     if (isIntroStep) {
         return (
-            <div className="w-full h-screen flex flex-col justify-center items-center">
+            <div className="w-full h-screen flex flex-col justify-center items-center px-4">
+                {' '}
+                {/* 양쪽 패딩 추가 */}
                 <h1 className="text-2xl font-bold mb-8 text-gray-800">인지능력 검사하기</h1>
                 <img
                     src={IntroImage} // 적절한 이미지 경로로 대체하세요.
@@ -256,7 +260,7 @@ const VoiceChat = () => {
                 />
                 <button
                     onClick={() => setIsIntroStep(false)}
-                    className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+                    className="w-full max-w-3xl bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
                     시작하기
                 </button>
             </div>
@@ -277,6 +281,11 @@ const VoiceChat = () => {
                         </div>
                     ))}
                     <button
+                        onClick={() => navigate('/mypage')} // /mypage로 이동
+                        className="w-full py-3 mt-6 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition">
+                        더 자세한 결과 보기
+                    </button>
+                    <button
                         onClick={startConversation}
                         className="w-full py-3 mt-6 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                         다시 시작하기
@@ -288,40 +297,62 @@ const VoiceChat = () => {
 
     return (
         <div className="w-full h-screen flex flex-col">
+            {/* Progress bar */}
             <div className="w-full max-w-3xl bg-gray-200 h-2 mt-4 mx-auto rounded">
                 <div
                     className="bg-blue-600 h-2 rounded transition-all duration-300"
                     style={{ width: `${((currentStep + 1) / questions.length) * 100}%` }}></div>
             </div>
 
-            <div className="flex flex-col justify-center items-center flex-grow">
-                <div className="w-full max-w-3xl p-6 bg-white rounded-lg">
-                    <div className="flex justify-between items-center border-b pb-4 mb-4">
-                        <h1 className="text-xl font-bold">음성 대화 테스트</h1>
-                        <div>
+            {/* 상단으로 올린 섹션 */}
+            <div className="flex flex-col justify-start items-center flex-grow pt-4 px-4">
+                {/* 상태 메시지 */}
+                <div
+                    className={`text-center p-4 rounded w-full max-w-3xl ${
+                        status.type === 'error'
+                            ? 'bg-red-100 text-red-600'
+                            : status.type === 'success'
+                              ? 'bg-green-100 text-green-600'
+                              : 'bg-gray-100 text-gray-800'
+                    }`}>
+                    {status.message}
+                </div>
+
+                {/* 질문과 버튼 */}
+                <div className="w-full max-w-3xl p-4 bg-white rounded-lg">
+                    {/* 질문과 단계 표시 */}
+                    <div className="flex justify-between items-center pb-2 mb-2">
+                        <h1 className="text-lg font-bold">음성 대화 테스트</h1>
+                        <div className="text-sm">
                             {currentStep + 1} / {questions.length}
                         </div>
                     </div>
 
+                    {/* 대화 시작 버튼 */}
                     {!isStarted ? (
                         <button
                             onClick={startConversation}
-                            className="w-full py-3 mb-4 bg-black text-white rounded-lg hover:opacity-90 transition">
+                            className="w-full py-2 mb-3 bg-black text-white rounded-lg hover:opacity-90 transition">
                             대화 시작
                         </button>
                     ) : (
                         <>
-                            <p className="text-center text-lg mb-4">{questions[currentStep]}</p>
+                            {/* 현재 질문 */}
+                            <p className="text-center text-base mb-3">{questions[currentStep]}</p>
+
+                            {/* 다시 답변하기 버튼 */}
                             {!currentAnswer && (
                                 <button
                                     onClick={retry}
-                                    className="w-full py-3 mb-4 bg-red-600 text-white rounded-lg hover:opacity-90 transition">
+                                    className="w-full py-2 mb-3 bg-red-600 text-white rounded-lg hover:opacity-90 transition">
                                     다시 답변하기
                                 </button>
                             )}
+
+                            {/* 다음 질문 / 결과 버튼 */}
                             <button
                                 onClick={handleNextQuestion}
-                                className={`w-full py-3 mb-4 ${
+                                className={`w-full py-2 ${
                                     currentStep === questions.length - 1
                                         ? 'bg-green-600 hover:opacity-90'
                                         : 'bg-blue-600 hover:opacity-90'
@@ -332,31 +363,21 @@ const VoiceChat = () => {
                             </button>
                         </>
                     )}
+                </div>
 
-                    <div
-                        className={`text-center p-4 rounded ${
-                            status.type === 'error'
-                                ? 'bg-red-100 text-red-600'
-                                : status.type === 'success'
-                                  ? 'bg-green-100 text-green-600'
-                                  : 'bg-gray-100 text-gray-800'
-                        }`}>
-                        {status.message}
-                    </div>
-
-                    <div className="relative bg-gray-100 rounded-lg overflow-hidden mt-4">
-                        {errorMsg && (
-                            <div className="absolute inset-0 flex items-center justify-center text-red-500">
-                                {errorMsg}
-                            </div>
-                        )}
-                        <video
-                            ref={videoRef}
-                            className="w-full h-[400px] object-cover transform scale-x-[-1]"
-                            autoPlay
-                            playsInline
-                        />
-                    </div>
+                {/* 비디오 영역 */}
+                <div className="relative bg-gray-100 rounded-lg overflow-hidden mt-4 w-full max-w-3xl">
+                    {errorMsg && (
+                        <div className="absolute inset-0 flex items-center justify-center text-red-500">
+                            {errorMsg}
+                        </div>
+                    )}
+                    <video
+                        ref={videoRef}
+                        className="w-full h-[400px] object-cover transform scale-x-[-1]"
+                        autoPlay
+                        playsInline
+                    />
                 </div>
             </div>
         </div>
