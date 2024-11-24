@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import Calendar from './Calander'
+import Calendar from '@/components/main/Calander'
 import dayjs from 'dayjs'
 import { useNavigate } from 'react-router-dom'
 
