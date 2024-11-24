@@ -11,69 +11,13 @@ import {
     ResponsiveContainer
 } from 'recharts'
 import { useNavigate } from 'react-router-dom'
+import { data } from './data'
 
 const StatisticalGraph = () => {
     const [period, setPeriod] = useState('day')
-    const [filterData, setFilteredData] = useState('')
+    const [filteredData, setFilteredData] = useState('')
     const [dominantEmotion, setDominantEmotion] = useState('')
     const navigate = useNavigate()
-
-    // 더미 데이터 (API 호출을 대신하는 더미 데이터)
-    const dummyAnalysisHistory = [
-        {
-            analysis_id: '12345',
-            date: '2024-11-23',
-            emotion_avg: {
-                angry: 0.15702912211418152,
-                disgust: 0.004910706542432308,
-                fear: 0.1376156508922577,
-                happy: 0.006351242307573557,
-                neutral: 64.16819763183594,
-                sad: 35.5252571105957,
-                surprise: 0.000641261984128505
-            },
-            face_confidence_avg: 90,
-            answer_score: 40
-        }
-    ]
-
-    const inputData = [
-        {
-            analysis_id: '12345',
-            date: '2024-11-23',
-            face_confidence: 0.91,
-            emotion: {
-                angry: 0.157,
-                disgust: 0.0049,
-                fear: 0.137,
-                happy: 0.0063,
-                neutral: 64.168,
-                sad: 35.525,
-                surprise: 0.0006
-            },
-            voice_analysis: {
-                answer_score: 43
-            }
-        },
-        {
-            analysis_id: '12346',
-            date: '2024-11-23',
-            face_confidence: 0.9,
-            emotion: {
-                angry: 10,
-                disgust: 20,
-                fear: 30,
-                happy: 10,
-                neutral: 10,
-                sad: 20,
-                surprise: 5
-            },
-            dominant_emotion: 'fear',
-            voice_analysis: {
-                answer_score: 55
-            }
-        }
-    ]
 
     const handleDominantEmotion = emotionData => {
         if (!emotionData || Object.keys(emotionData).length === 0) return
@@ -88,8 +32,8 @@ const StatisticalGraph = () => {
         setDominantEmotion(maxEmotion.emotion)
     }
 
-    //deepface 결과와 voice의 결과에 따른 각각의 점수를 매긴 뒤 총점 계산
-    const calculateEmotionScore = emotion_avg => {
+    const calculateTotalScore = item => {
+        // 감정 점수 계산
         const emotionWeights = {
             angry: -0.2,
             disgust: -0.1,
@@ -100,64 +44,93 @@ const StatisticalGraph = () => {
             surprise: 0
         }
 
-        const totalEmotionScore = Object.entries(emotion_avg).reduce((score, [emotion, value]) => {
+        const emotionScore = Object.entries(item.emotion_avg).reduce((score, [emotion, value]) => {
             const weight = emotionWeights[emotion] || 0
             return score + weight * value
         }, 0)
 
-        // 감정 점수를 0~100으로 정규화
-        return Math.max(0, Math.min(100, 100 + totalEmotionScore / 10))
+        const normalizedEmotionScore = Math.max(0, Math.min(100, 50 + emotionScore))
+
+        // 총점 계산 (감정 50%, 얼굴 인식 신뢰도 20%, 답변 점수 30%)
+        return Math.round(
+            normalizedEmotionScore * 0.5 + item.face_confidence_avg * 0.2 + item.answer_score * 0.3
+        )
     }
 
-    const calculateTotalScore = data => {
-        const emotion_score = calculateEmotionScore(data.emotion)
-        const confidence_score = Math.min(100, data.face_confidence * 100) // 0~1을 0~100으로 변환
-        const answer_score = Math.min(100, data.voice_analysis.answer_score) // 이미 0~100
+    const processDataByPeriod = (data, periodType) => {
+        const currentDate = new Date()
+        const oneYearAgo = new Date()
+        oneYearAgo.setFullYear(currentDate.getFullYear() - 1)
 
-        // 가중치 합산
-        const totalScore =
-            emotion_score * 0.5 + // 감정 분석: 50%
-            confidence_score * 0.2 + // 얼굴 신뢰도: 20%
-            answer_score * 0.3 // 설문 점수: 30%
+        // 필터링된 데이터를 저장할 객체
+        const groupedData = {}
 
-        return Math.round(totalScore) // 소수점 반올림
-    }
-
-    const calculateFinalScoreForDate = dataList => {
-        if (!dataList || dataList.length === 0) return 0
-
-        // 같은 날짜의 데이터를 필터링
-        const scores = dataList.map(data => calculateTotalScore(data))
-        const finalScore = scores.reduce((sum, score) => sum + score, 0) / scores.length
-
-        return Math.round(finalScore)
-    }
-
-    const finalScore = calculateFinalScoreForDate(inputData)
-
-    const filterData = (data, period) => {
-        const today = new Date('2024-11-23')
-        return data.filter(item => {
-            const date = parse(item.date, 'yyyy-MM-dd', new Date())
-            if (isNaN(date)) return false
-
-            let startDate, endDate
-            if (period === 'week') {
-                startDate = startOfWeek(today)
-                endDate = endOfWeek(today)
-                return isWithinInterval(date, { start: startDate, end: endDate })
-            } else if (period === 'month') {
-                startDate = startOfMonth(today)
-                endDate = endOfMonth(today)
-                return isWithinInterval(date, { start: startDate, end: endDate })
+        // 기간에 따른 데이터 필터링
+        const filteredData = data.filter(item => {
+            const itemDate = new Date(item.date)
+            if (periodType === 'day') {
+                // 최근 30일
+                const thirtyDaysAgo = new Date()
+                thirtyDaysAgo.setDate(currentDate.getDate() - 30)
+                return itemDate >= thirtyDaysAgo
+            } else if (periodType === 'week' || periodType === 'month') {
+                // 주 단위는 한 달, 월 단위는 1년
+                const startDate =
+                    periodType === 'week'
+                        ? new Date(currentDate.setMonth(currentDate.getMonth() - 1))
+                        : oneYearAgo
+                return itemDate >= startDate
             }
             return true
         })
+
+        // 기간별 데이터 그룹핑 및 평균 계산
+        filteredData.forEach(item => {
+            const itemDate = new Date(item.date)
+            let key
+
+            if (periodType === 'day') {
+                // 일별 데이터는 그대로 사용
+                key = item.date
+            } else if (periodType === 'week') {
+                // 주별 데이터 그룹핑
+                const weekStart = new Date(itemDate)
+                weekStart.setDate(itemDate.getDate() - itemDate.getDay())
+                key = weekStart.toISOString().split('T')[0]
+            } else if (periodType === 'month') {
+                // 월별 데이터 그룹핑
+                key = `${itemDate.getFullYear()}-${String(itemDate.getMonth() + 1).padStart(2, '0')}`
+            }
+
+            if (!groupedData[key]) {
+                groupedData[key] = {
+                    date: key,
+                    totalScores: [],
+                    items: []
+                }
+            }
+
+            const totalScore = calculateTotalScore(item)
+            groupedData[key].totalScores.push(totalScore)
+            groupedData[key].items.push(item)
+        })
+
+        // 평균 계산 및 최종 데이터 형식으로 변환
+        return Object.values(groupedData)
+            .map(group => ({
+                date: group.date,
+                totalScore: Math.round(
+                    group.totalScores.reduce((sum, score) => sum + score, 0) /
+                        group.totalScores.length
+                ),
+                itemCount: group.items.length
+            }))
+            .sort((a, b) => new Date(a.date) - new Date(b.date))
     }
 
     useEffect(() => {
-        const result = filterData(dummyAnalysisHistory, period)
-        setFilteredData(result)
+        const processed = processDataByPeriod(data, period)
+        setFilteredData(processed)
     }, [period])
 
     const handleChangePeriod = newPeriod => {
@@ -170,7 +143,7 @@ const StatisticalGraph = () => {
 
     return (
         <div className="p-6 bg-gray-50 rounded-lg shadow-lg">
-            <h1 className="text-2xl font-bold text-center mb-6">통계 시각화 그래프</h1>
+            <h1 className="text-2xl font-bold text-center text-black mb-6">통계 시각화 그래프</h1>
 
             {/* 필터 버튼 */}
             <div className="flex justify-center space-x-4 mb-6">
@@ -201,23 +174,49 @@ const StatisticalGraph = () => {
             <ResponsiveContainer
                 width="100%"
                 height={400}>
-                {finalScore.length > 0 ? (
-                    <LineChart data={finalScore}>
+                {filteredData.length > 0 ? (
+                    <LineChart
+                        data={filteredData}
+                        onClick={handleClick}
+                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="date" />
-                        <YAxis />
-                        <Tooltip />
+                        <XAxis
+                            dataKey="date"
+                            angle={-45}
+                            textAnchor="end"
+                            height={60}
+                            tickFormatter={value => {
+                                if (period === 'month') {
+                                    const [year, month] = value.split('-')
+                                    return `${month}/${year}`
+                                }
+                                return value
+                            }}
+                        />
+                        <YAxis
+                            domain={[0, 100]}
+                            label={{
+                                value: 'Score',
+                                angle: -90,
+                                position: 'insideLeft',
+                                offset: 10
+                            }}
+                        />
+                        {/* <Tooltip content={<CustomTooltip />} /> */}
                         <Legend />
                         <Line
                             type="monotone"
-                            dataKey="value"
+                            dataKey="totalScore"
                             stroke="#8884d8"
-                            onClick={handleClick}
+                            name="Average Score"
+                            strokeWidth={2}
+                            dot={{ r: 4 }}
+                            activeDot={{ r: 8 }}
                         />
                     </LineChart>
                 ) : (
-                    <div className="text-center py-20 text-gray-500">
-                        해당 기간에 데이터가 없습니다.
+                    <div className="flex items-center justify-center h-full">
+                        <p className="text-gray-500">No data available for this period.</p>
                     </div>
                 )}
             </ResponsiveContainer>
