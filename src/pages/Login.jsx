@@ -54,6 +54,7 @@ function LoginPage() {
             console.log('로그인 성공:', response)
 
             localStorage.setItem('token', response.token)
+            localStorage.setItem('userId', response.user.id)
             navigate('/home')
         } catch (error) {
             console.error('로그인 실패:', error)

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'
 
 const UserInfo = () => {
-    const [userInfo, setUserInfo] = useState(null); // 올바르게 상태 선언
+    const [userInfo, setUserInfo] = useState(null) // 올바르게 상태 선언
 
     // 더미 데이터 (API 호출을 대신하는 더미 데이터)
     const dummyUserData = {
@@ -9,15 +9,15 @@ const UserInfo = () => {
         name: '홍길동',
         age: 29,
         gender: '남성',
-        occupation: '소프트웨어 개발자',
-    };
+        occupation: '소프트웨어 개발자'
+    }
 
     useEffect(() => {
-        setUserInfo(dummyUserData); // 상태값 업데이트
-    }, []);
+        setUserInfo(dummyUserData) // 상태값 업데이트
+    }, [])
 
     if (!userInfo) {
-        return <p>로딩 중...</p>; // 로딩 상태 처리
+        return <p>로딩 중...</p> // 로딩 상태 처리
     }
 
     return (
@@ -35,7 +35,7 @@ const UserInfo = () => {
                 <strong>성별:</strong> {userInfo.gender}
             </p>
         </div>
-    );
-};
+    )
+}
 
-export default UserInfo;
+export default UserInfo
