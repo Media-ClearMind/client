@@ -11,7 +11,7 @@ const Layout = ({ withLoading }) => {
     useEffect(() => {
         if (withLoading) {
             setIsLoading(true)
-            const timer = setTimeout(() => setIsLoading(false), 200) // 1초 로딩
+            const timer = setTimeout(() => setIsLoading(false), 1000) // 1초 로딩
             return () => clearTimeout(timer)
         }
     }, [location.pathname, withLoading])
