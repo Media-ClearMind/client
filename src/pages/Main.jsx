@@ -1,5 +1,4 @@
 import BlueLogoIcon from '@/assets/images/logo-transparent.png'
-import DetailPage from './mypage/DetailPage'
 import { useNavigate } from 'react-router-dom'
 
 const WelcomePage = () => {

@@ -1,39 +1,29 @@
+import axios from 'axios'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts'
 
 const DetailInfo = () => {
     const { analysis_id } = useParams()
+    const [loading, setLoading] = useState(true)
     const [analysisData, setAnalysisData] = useState(null)
+    const [dominantEmotion, setDominantEmotion] = useState('')
     const [stressLevel, setStressLevel] = useState(0)
     const [emotionalState, setEmotionalState] = useState('')
 
-    const dummyDetailData = {
-        analysis_id: '12345',
-        createdAt: '2024-11-23',
-        face_confidence: 0.91,
-        emotion: {
-            angry: 0.15702912211418152,
-            disgust: 0.004910706542432308,
-            fear: 0.1376156508922577,
-            happy: 0.006351242307573557,
-            neutral: 64.16819763183594,
-            sad: 35.5252571105957,
-            surprise: 0.000641261984128505
-        },
-        dominant_emotion: 'neutral',
-        voice_analysis: {
-            stress_level: 5,
-            voice_confidence: 90
-        },
-        result: {
-            summary: '사용자는 긍정적인 감정을 나타내었으며, 스트레스 레벨은 보통 수준입니다.',
-            detailed_scores: {
-                category_1: 85,
-                category_2: 78
-            }
-        }
+    const handleDominantEmotion = emotionData => {
+        if (!emotionData || Object.keys(emotionData).length === 0) return
+
+        // `emotionData`에서 가장 높은 값을 가진 감정을 찾음
+        const maxEmotion = Object.entries(emotionData).reduce(
+            (max, [emotion, value]) => (value > max.value ? { emotion, value } : max),
+            { emotion: '', value: -Infinity }
+        )
+
+        // 상태 업데이트
+        setDominantEmotion(maxEmotion.emotion)
     }
+
     const calculateStressLevel = emotionData => {
         // 스트레스 관련 감정들의 가중치 정의
         const stressWeights = {
@@ -71,12 +61,25 @@ const DetailInfo = () => {
 
     // 데이터 설정 및 분석
     useEffect(() => {
-        setAnalysisData(dummyDetailData)
-        if (dummyDetailData?.emotion) {
-            const calculatedStress = calculateStressLevel(dummyDetailData.emotion)
-            setStressLevel(calculatedStress.toFixed(1))
-            setEmotionalState(analyzeEmotionalState(dummyDetailData.emotion))
+        const fetchData = async () => {
+            try {
+                setLoading(true)
+                const response = await axios.get(`/api/interviews/analysis/averages`)
+                handleDominantEmotion(response.data)
+                setAnalysisData(response.data)
+                if (response.data?.emotion) {
+                    const calculatedStress = calculateStressLevel(response.data.emotion)
+                    setStressLevel(calculatedStress.toFixed(1))
+                    setEmotionalState(analyzeEmotionalState(response.data.emotion))
+                }
+            } catch (err) {
+                console.log(err)
+            } finally {
+                setLoading(false)
+            }
         }
+
+        fetchData()
     }, [analysis_id])
 
     const getStressLevelCategory = level => {
@@ -97,8 +100,6 @@ const DetailInfo = () => {
         : []
 
     const COLORS = ['#FF6347', '#FFD700', '#98FB98', '#87CEFA', '#FF69B4', '#D2691E', '#8A2BE2']
-
-    if (!analysisData) return <div className="p-4">로딩 중...</div>
 
     const renderCustomizedLabel = ({
         cx,
@@ -126,93 +127,103 @@ const DetailInfo = () => {
         ) : null
     }
 
+    if (loading)
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <div className="text-xl text-gray-600">로딩 중...</div>
+            </div>
+        )
+
     return (
-        <div className="max-w-4xl mx-auto p-6 bg-white shadow-md rounded-md">
-            <h1 className="text-2xl font-bold mb-4 text-gray-800">분석 디테일 페이지</h1>
+        <div className="h-screen overflow-y-auto bg-gray-100">
+            <div className="max-w-4xl mx-auto p-6 bg-white shadow-md rounded-md relative">
+                <h1 className="text-2xl font-bold mb-4 text-gray-800 sticky top-0 bg-white z-10 py-4 border-b">
+                    분석 디테일 페이지
+                </h1>
 
-            <section className="mb-8">
-                <h2 className="text-xl font-semibold mb-3 text-gray-700">감정 분포</h2>
-                <div className="flex justify-center">
-                    <PieChart
-                        width={500}
-                        height={400}>
-                        <Pie
-                            data={pieData}
-                            dataKey="value"
-                            nameKey="name"
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={160}
-                            innerRadius={100}
-                            fill="#8884d8"
-                            labelLine={false}
-                            label={renderCustomizedLabel}>
-                            {pieData.map((entry, index) => (
-                                <Cell
-                                    key={`cell-${index}`}
-                                    fill={COLORS[index % COLORS.length]}
-                                />
-                            ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend
-                            verticalAlign="bottom"
-                            height={36}
-                        />
-                    </PieChart>
-                </div>
-            </section>
-
-            <section className="mb-6">
-                <h2 className="text-xl font-semibold mb-3 text-gray-700">분석 요약 정보</h2>
-                <div className="space-y-4 text-gray-600">
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                        <p>
-                            <strong>분석 일자:</strong>{' '}
-                            {new Date(analysisData.createdAt).toLocaleDateString('ko-KR')}
-                        </p>
-                        <p>
-                            <strong>주요 감정 상태:</strong>{' '}
-                            <span className="capitalize">{analysisData.dominant_emotion}</span>
-                        </p>
-                        <p>
-                            <strong>감정 상태 해석:</strong>{' '}
-                            <span className="text-blue-600">{emotionalState}</span>
-                        </p>
+                <section className="mb-8">
+                    <h2 className="text-xl font-semibold mb-3 text-gray-700">감정 분포</h2>
+                    <div className="flex justify-center">
+                        <PieChart
+                            width={500}
+                            height={400}>
+                            <Pie
+                                data={pieData}
+                                dataKey="value"
+                                nameKey="name"
+                                cx="50%"
+                                cy="50%"
+                                outerRadius={160}
+                                innerRadius={100}
+                                fill="#8884d8"
+                                labelLine={false}
+                                label={renderCustomizedLabel}>
+                                {pieData.map((entry, index) => (
+                                    <Cell
+                                        key={`cell-${index}`}
+                                        fill={COLORS[index % COLORS.length]}
+                                    />
+                                ))}
+                            </Pie>
+                            <Tooltip />
+                            <Legend
+                                verticalAlign="bottom"
+                                height={36}
+                            />
+                        </PieChart>
                     </div>
+                </section>
 
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                        <p>
-                            <strong>얼굴 인식 신뢰도:</strong>{' '}
-                            <span className="text-blue-600">
-                                {(analysisData.face_confidence * 100).toFixed(1)}%
-                            </span>
-                        </p>
-                        <p>
-                            <strong>스트레스 레벨:</strong>{' '}
-                            <span className={stressCategory.color}>
-                                {stressLevel}% ({stressCategory.text})
-                            </span>
-                        </p>
-                    </div>
+                <section className="mb-6">
+                    <h2 className="text-xl font-semibold mb-3 text-gray-700">분석 요약 정보</h2>
+                    <div className="space-y-4 text-gray-600">
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <p>
+                                <strong>분석 일자:</strong> {analysisData.date}
+                            </p>
+                            <p>
+                                <strong>주요 감정 상태:</strong>{' '}
+                                <span className="capitalize">{dominantEmotion}</span>
+                            </p>
+                            <p>
+                                <strong>감정 상태 해석:</strong>{' '}
+                                <span className="text-blue-600">{emotionalState}</span>
+                            </p>
+                        </div>
 
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="font-semibold mb-2">스트레스 관리 권장사항:</p>
-                        <p className="text-sm">
-                            {parseFloat(stressLevel) > 60
-                                ? '현재 스트레스 수준이 높습니다. 전문가와의 상담을 고려해보세요.'
-                                : parseFloat(stressLevel) > 40
-                                  ? '적절한 휴식과 스트레스 관리가 필요합니다.'
-                                  : '현재 스트레스 수준이 양호합니다. 현재의 상태를 유지하세요.'}
-                        </p>
-                    </div>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <p>
+                                <strong>얼굴 인식 신뢰도:</strong>{' '}
+                                <span className="text-blue-600">
+                                    {(analysisData.face_confidence * 100).toFixed(1)}%
+                                </span>
+                            </p>
+                            <p>
+                                <strong>스트레스 레벨:</strong>{' '}
+                                <span className={stressCategory.color}>
+                                    {stressLevel}% ({stressCategory.text})
+                                </span>
+                            </p>
+                        </div>
 
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="font-semibold">종합 분석:</p>
-                        <p>{analysisData.result.summary}</p>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="font-semibold mb-2">스트레스 관리 권장사항:</p>
+                            <p className="text-sm">
+                                {parseFloat(stressLevel) > 60
+                                    ? '현재 스트레스 수준이 높습니다. 전문가와의 상담을 고려해보세요.'
+                                    : parseFloat(stressLevel) > 40
+                                      ? '적절한 휴식과 스트레스 관리가 필요합니다.'
+                                      : '현재 스트레스 수준이 양호합니다. 현재의 상태를 유지하세요.'}
+                            </p>
+                        </div>
+
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="font-semibold">종합 분석:</p>
+                            <p>{analysisData.result.summary}</p>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            </div>
         </div>
     )
 }
