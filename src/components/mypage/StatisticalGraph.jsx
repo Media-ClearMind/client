@@ -10,7 +10,7 @@ import {
     ResponsiveContainer
 } from 'recharts'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import { data } from './data'
 
 const StatisticalGraph = () => {
     const [period, setPeriod] = useState('day')
@@ -114,24 +114,30 @@ const StatisticalGraph = () => {
             .sort((a, b) => new Date(a.date) - new Date(b.date))
     }
 
-    const fetchData = async () => {
-        setLoading(true)
-        try {
-            const response = await axios.get(`/api/interviews/analysis/averages`, {
-                params: { period }
-            })
-            const processed = processDataByPeriod(response.data, period)
-            setFilteredData(processed)
-        } catch (error) {
-            console.log(error)
-            setFilteredData([])
-        } finally {
-            setLoading(false)
-        }
-    }
+    // const fetchData = async () => {
+    //     setLoading(true)
+    //     try {
+    //         const response = await axios.get(`/api/interviews/analysis/averages`, {
+    //             params: { period }
+    //         })
+    //         const processed = processDataByPeriod(response.data, period)
+    //         setFilteredData(processed)
+    //     } catch (error) {
+    //         console.log(error)
+    //         setFilteredData([])
+    //     } finally {
+    //         setLoading(false)
+    //     }
+    // }
+
+    // useEffect(() => {
+    //     fetchData()
+    // }, [period])
 
     useEffect(() => {
-        fetchData()
+        // 더미 데이터를 가공하여 사용
+        const processed = processDataByPeriod(data, period)
+        setFilteredData(processed)
     }, [period])
 
     const handleChangePeriod = newPeriod => {
