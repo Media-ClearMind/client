@@ -2,6 +2,7 @@ import axios from 'axios'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts'
+import { data } from '../mypage/data'
 
 const DetailInfo = () => {
     const { analysis_id } = useParams()
@@ -59,16 +60,23 @@ const DetailInfo = () => {
         return '복합적인 감정 상태'
     }
 
-    // 데이터 설정 및 분석
     useEffect(() => {
-        setAnalysisData(data)
-        if (data?.emotion) {
-            const calculatedStress = calculateStressLevel(data.emotion)
+        // analysis_id를 기반으로 데이터 찾기
+        const selectedData = data.find(item => item.analysis_id === analysis_id)
+        if (selectedData) {
+            setAnalysisData({
+                ...selectedData,
+                emotion: selectedData.emotion_avg, // emotion 데이터로 매핑
+                face_confidence: selectedData.face_confidence_avg, // 신뢰도 매핑
+                result: { summary: `Analysis result for ID ${analysis_id}` } // 샘플 요약
+            })
+            const calculatedStress = calculateStressLevel(selectedData.emotion_avg)
             setStressLevel(calculatedStress.toFixed(1))
-            setEmotionalState(analyzeEmotionalState(data.emotion))
+            setEmotionalState(analyzeEmotionalState(selectedData.emotion_avg))
+            handleDominantEmotion()
+        } else {
+            console.error('Analysis data not found!')
         }
-
-        fetchData()
     }, [analysis_id])
 
     const getStressLevelCategory = level => {
