@@ -6,7 +6,7 @@ const UserInfo = () => {
 
     const fetchData = async () => {
         try {
-            const token = localStorage.getItem('access_token') // 토큰 가져오기
+            const token = localStorage.getItem('token') // 토큰 가져오기
             if (!token) {
                 throw new Error('Token not found') // 토큰이 없을 경우 에러 처리
             }
