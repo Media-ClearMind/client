@@ -1,98 +1,9 @@
+import { analyzeAnswerWithGPT, fetchQuestionFromGPT } from '@/lib/api/gpt'
 import { useEffect, useRef, useState } from 'react'
 
 import IntroImage from '@/assets/images/home_pogny.png' // 인트로 이미지
 import { fetchData } from '@/lib/api/util' // fetchData 유틸 함수
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
-
-const fetchQuestionFromGPT = async () => {
-    const apiKey = import.meta.env.VITE_OPENAI_API_KEY
-
-    try {
-        const response = await axios.post(
-            'https://api.openai.com/v1/chat/completions',
-            {
-                model: 'gpt-3.5-turbo',
-                messages: [
-                    {
-                        role: 'system',
-                        content: `당신은 한국 노인을 위한 인지 능력 평가 질문을 만드는 전문 AI 도우미입니다. 
-                        다음 조건을 충족하는 한 개의 명확하고 간단한 질문을 한국어로 생성해 주세요:
-                        - 노인이 쉽게 이해할 수 있는 언어로 작성
-                        - 기억력, 인지 능력, 일상 기능을 평가하는 질문
-                        - 간단하고 명확하게 대답할 수 있는 질문
-                        - 한국 문화와 노인의 생활 맥락에 적합한 질문
-                        추가 설명 없이 오직 질문만 제공해 주세요.`
-                    },
-                    {
-                        role: 'user',
-                        content: '노인의 인지 기능을 평가할 수 있는 진단 질문을 생성해 주세요.'
-                    }
-                ],
-                max_tokens: 50,
-                temperature: 0.7
-            },
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${apiKey}`
-                }
-            }
-        )
-
-        return response.data.choices[0].message.content.trim()
-    } catch (error) {
-        console.error('GPT 질문 생성 오류:', error)
-        throw error
-    }
-}
-
-const analyzeAnswerWithGPT = async (question, userAnswer) => {
-    const apiKey = import.meta.env.VITE_OPENAI_API_KEY
-
-    try {
-        const response = await axios.post(
-            'https://api.openai.com/v1/chat/completions',
-            {
-                model: 'gpt-4-0613',
-                messages: [
-                    {
-                        role: 'system',
-                        content: `당신은 사용자의 질문과 답변을 평가하는 전문가입니다.
-                        다음 내용을 분석하세요:
-                        - 답변의 적절성 ("적절함" 또는 "부적절함"으로 평가)
-                        - 평가 근거를 간단히 설명.
-                        결과는 JSON 형식으로 반환하세요:
-                        {
-                            "적절성": "적절함" 또는 "부적절함",
-                            "이유": "평가 근거"
-                        }`
-                    },
-                    {
-                        role: 'user',
-                        content: `질문: ${question}\n답변: ${userAnswer}`
-                    }
-                ],
-                max_tokens: 100,
-                temperature: 0.7
-            },
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${apiKey}`
-                }
-            }
-        )
-
-        return JSON.parse(response.data.choices[0].message.content.trim())
-    } catch (error) {
-        console.error('답변 분석 오류:', error)
-        return {
-            적절성: '오류',
-            이유: '분석 실패'
-        }
-    }
-}
 
 const VoiceChat = () => {
     const navigate = useNavigate() // 페이지 이동을 위한 useNavigate 훅
@@ -122,14 +33,15 @@ const VoiceChat = () => {
                 fetchQuestionFromGPT()
             ]
 
-            console.log('Fetching questions...') // 로깅 추가
-            const generatedQuestions = await Promise.all(questionPromises)
+            console.log('Fetching questions...')
+            const generatedQuestions = await Promise.all(questionPromises) // 모든 질문 생성 완료 대기
 
-            console.log('Generated Questions:', generatedQuestions) // 생성된 질문 로깅
+            console.log('Generated Questions:', generatedQuestions)
             setQuestions(generatedQuestions)
         } catch (error) {
             console.error('질문 생성 실패:', error)
-            console.error('Error Details:', error.response?.data || error.message) // 상세 오류 로깅
+            console.error('Error Details:', error.response?.data || error.message)
+            setQuestions([]) // 실패 시 빈 배열로 초기화
         } finally {
             setIsLoading(false)
         }
@@ -176,16 +88,18 @@ const VoiceChat = () => {
 
         if (currentAnswer) {
             const question = questions[currentStep]
-            const evaluation = await analyzeAnswerWithGPT(question, currentAnswer)
-            setResponses(prev => [
-                ...prev,
-                {
-                    question: questions[currentStep],
-                    answer: currentAnswer
-                }
-            ])
-            setEvaluations(prev => [...prev, evaluation])
-            setCurrentAnswer(null)
+
+            try {
+                const evaluation = await analyzeAnswerWithGPT(question, currentAnswer) // 분석 대기
+                setResponses(prev => [...prev, { question, answer: currentAnswer }])
+                setEvaluations(prev => [...prev, evaluation])
+            } catch (error) {
+                console.error('답변 분석 오류:', error)
+                setResponses(prev => [...prev, { question, answer: currentAnswer }])
+                setEvaluations(prev => [...prev, { 적절성: '오류', 이유: '분석 실패' }])
+            } finally {
+                setCurrentAnswer(null) // 상태 초기화
+            }
         }
 
         if (currentStep < questions.length - 1) {
@@ -392,12 +306,12 @@ const VoiceChat = () => {
                         <div
                             key={index}
                             className="my-4 p-4 bg-gray-100 rounded-lg">
-                            <div className="font-bold text-gray-600">Q: {response.question}</div>
-                            <div className="text-gray-800 mt-1">A: {response.answer}</div>
-                            <p>
+                            <div className="font-bold text-black">Q: {response.question}</div>
+                            <div className="text-black mt-1">A: {response.answer}</div>
+                            <p className="text-black mt-1">
                                 <strong>평가:</strong> {evaluations[index]?.적절성 || '분석 중'}
                             </p>
-                            <p>
+                            <p className="text-black mt-1">
                                 <strong>이유:</strong> {evaluations[index]?.이유 || '분석 중'}
                             </p>
                         </div>
@@ -409,7 +323,7 @@ const VoiceChat = () => {
                     </button>
                     <button
                         onClick={startConversation}
-                        className="w-full py-3 mt-6 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        className="w-full py-3 mt-6 my-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                         다시 시작하기
                     </button>
                 </div>

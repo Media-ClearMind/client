@@ -1,5 +1,5 @@
-import StatisticalGraph from '@/components/mypage/StatisticalGraph';
-import UserInfo from '@/components/mypage/UserInfo';
+import StatisticalGraph from '@/components/mypage/StatisticalGraph'
+import UserInfo from '@/components/mypage/UserInfo'
 
 const Mypage = () => {
     return (
@@ -19,7 +19,7 @@ const Mypage = () => {
                 </div>
             </div>
         </div>
-    );
-};
+    )
+}
 
-export default Mypage;
+export default Mypage
