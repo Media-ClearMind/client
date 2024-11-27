@@ -1,52 +1,27 @@
-import axios from 'axios'
-import { useState, useEffect } from 'react'
+import useUserStore from '../../stores/useUserStore'
 
 const UserInfo = () => {
-    const [userinfo, setUserInfo] = useState(null)
+    const user = useUserStore(state => state.user)
 
-    const fetchData = async () => {
-        try {
-            const token = localStorage.getItem('token') // 토큰 가져오기
-            if (!token) {
-                throw new Error('Token not found') // 토큰이 없을 경우 에러 처리
-            }
-
-            const response = await axios.get(
-                `${import.meta.env.VITE_API_BASE_URL}/api/users/profile`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}` // 토큰 포함
-                    }
-                }
-            )
-
-            setUserInfo(response.data)
-        } catch (error) {
-            console.log(error)
-        }
-    }
-
-    useEffect(() => {
-        fetchData()
-    }, [])
-
-    if (!userinfo) {
-        return <div>로딩 중...</div>
-    }
+    // user가 로드되기 전에는 "익명"으로 표시
+    const userName = user ? user.name : '익명'
+    const userAge = user ? user.age : '정보 없음'
+    const userGender = user ? user.gender : '정보 없음'
+    const userOccupation = user ? user.occupation : '정보 없음'
 
     return (
         <div className="max-w-md mx-auto p-6 bg-white text-black shadow-md rounded-md">
             <p>
-                <strong>이름:</strong> {userinfo.name}
+                <strong>이름:</strong> {userName}
             </p>
             <p>
-                <strong>나이:</strong> {userinfo.age}세
+                <strong>나이:</strong> {userAge}세
             </p>
             <p>
-                <strong>성별:</strong> {userinfo.gender}
+                <strong>성별:</strong> {userGender}
             </p>
             <p>
-                <strong>직업:</strong> {userinfo.occupation}
+                <strong>직업:</strong> {userOccupation}
             </p>
         </div>
     )
