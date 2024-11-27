@@ -46,6 +46,54 @@ const fetchQuestionFromGPT = async () => {
         throw error
     }
 }
+
+const analyzeAnswerWithGPT = async (question, userAnswer) => {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY
+
+    try {
+        const response = await axios.post(
+            'https://api.openai.com/v1/chat/completions',
+            {
+                model: 'gpt-4-0613',
+                messages: [
+                    {
+                        role: 'system',
+                        content: `당신은 사용자의 질문과 답변을 평가하는 전문가입니다.
+                        다음 내용을 분석하세요:
+                        - 답변의 적절성 ("적절함" 또는 "부적절함"으로 평가)
+                        - 평가 근거를 간단히 설명.
+                        결과는 JSON 형식으로 반환하세요:
+                        {
+                            "적절성": "적절함" 또는 "부적절함",
+                            "이유": "평가 근거"
+                        }`
+                    },
+                    {
+                        role: 'user',
+                        content: `질문: ${question}\n답변: ${userAnswer}`
+                    }
+                ],
+                max_tokens: 100,
+                temperature: 0.7
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${apiKey}`
+                }
+            }
+        )
+
+        return JSON.parse(response.data.choices[0].message.content.trim())
+    } catch (error) {
+        console.error('답변 분석 오류:', error)
+        return {
+            적절성: '오류',
+            이유: '분석 실패'
+        }
+    }
+}
+
 const VoiceChat = () => {
     const navigate = useNavigate() // 페이지 이동을 위한 useNavigate 훅
     const [currentStep, setCurrentStep] = useState(0)
@@ -59,6 +107,7 @@ const VoiceChat = () => {
     const [isIntroStep, setIsIntroStep] = useState(true) // 시작 단계 상태
     const [questions, setQuestions] = useState([])
     const [isLoading, setIsLoading] = useState(false)
+    const [evaluations, setEvaluations] = useState([]) // 답변 평가 데이터를 저장
 
     const videoRef = useRef(null)
 
@@ -90,6 +139,7 @@ const VoiceChat = () => {
         try {
             await generateQuestions()
             setResponses([])
+            setEvaluations([])
             setCurrentStep(0)
             setCurrentAnswer(null)
             setIsStarted(true)
@@ -125,6 +175,8 @@ const VoiceChat = () => {
         stopRecognition()
 
         if (currentAnswer) {
+            const question = questions[currentStep]
+            const evaluation = await analyzeAnswerWithGPT(question, currentAnswer)
             setResponses(prev => [
                 ...prev,
                 {
@@ -132,6 +184,7 @@ const VoiceChat = () => {
                     answer: currentAnswer
                 }
             ])
+            setEvaluations(prev => [...prev, evaluation])
             setCurrentAnswer(null)
         }
 
@@ -341,6 +394,12 @@ const VoiceChat = () => {
                             className="my-4 p-4 bg-gray-100 rounded-lg">
                             <div className="font-bold text-gray-600">Q: {response.question}</div>
                             <div className="text-gray-800 mt-1">A: {response.answer}</div>
+                            <p>
+                                <strong>평가:</strong> {evaluations[index]?.적절성 || '분석 중'}
+                            </p>
+                            <p>
+                                <strong>이유:</strong> {evaluations[index]?.이유 || '분석 중'}
+                            </p>
                         </div>
                     ))}
                     <button
@@ -369,6 +428,7 @@ const VoiceChat = () => {
 
             {/* 상단으로 올린 섹션 */}
             <div className="flex flex-col justify-start items-center flex-grow pt-4 px-4">
+                <p className="text-center text-black text-base mb-3">{questions[currentStep]}</p>
                 {/* 상태 메시지 */}
                 <div
                     className={`text-center p-4 rounded w-full max-w-3xl ${
@@ -402,18 +462,6 @@ const VoiceChat = () => {
                         <>
                             {/* 현재 질문 */}
                             <p className="text-center text-base mb-3">{questions[currentStep]}</p>
-
-                            {/* 상태 메시지 */}
-                            <div
-                                className={`text-center p-4 rounded w-full max-w-3xl mb-4 ${
-                                    status.type === 'error'
-                                        ? 'bg-red-100 text-red-600'
-                                        : status.type === 'success'
-                                          ? 'bg-green-100 text-green-600'
-                                          : 'bg-gray-100 text-gray-800'
-                                }`}>
-                                {status.message}
-                            </div>
 
                             {/* 다시 답변하기 버튼 */}
                             {!currentAnswer && (
