@@ -1,9 +1,51 @@
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import IntroImage from '@/assets/images/home_pogny.png' // 인트로 이미지
 import { fetchData } from '@/lib/api/util' // fetchData 유틸 함수
 import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
 
+const fetchQuestionFromGPT = async () => {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY
+
+    try {
+        const response = await axios.post(
+            'https://api.openai.com/v1/chat/completions',
+            {
+                model: 'gpt-3.5-turbo',
+                messages: [
+                    {
+                        role: 'system',
+                        content: `당신은 한국 노인을 위한 인지 능력 평가 질문을 만드는 전문 AI 도우미입니다. 
+                        다음 조건을 충족하는 한 개의 명확하고 간단한 질문을 한국어로 생성해 주세요:
+                        - 노인이 쉽게 이해할 수 있는 언어로 작성
+                        - 기억력, 인지 능력, 일상 기능을 평가하는 질문
+                        - 간단하고 명확하게 대답할 수 있는 질문
+                        - 한국 문화와 노인의 생활 맥락에 적합한 질문
+                        추가 설명 없이 오직 질문만 제공해 주세요.`
+                    },
+                    {
+                        role: 'user',
+                        content: '노인의 인지 기능을 평가할 수 있는 진단 질문을 생성해 주세요.'
+                    }
+                ],
+                max_tokens: 50,
+                temperature: 0.7
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${apiKey}`
+                }
+            }
+        )
+
+        return response.data.choices[0].message.content.trim()
+    } catch (error) {
+        console.error('GPT 질문 생성 오류:', error)
+        throw error
+    }
+}
 const VoiceChat = () => {
     const navigate = useNavigate() // 페이지 이동을 위한 useNavigate 훅
     const [currentStep, setCurrentStep] = useState(0)
@@ -15,14 +57,93 @@ const VoiceChat = () => {
     const [isFinished, setIsFinished] = useState(false)
     const [errorMsg, setErrorMsg] = useState('')
     const [isIntroStep, setIsIntroStep] = useState(true) // 시작 단계 상태
+    const [questions, setQuestions] = useState([])
+    const [isLoading, setIsLoading] = useState(false)
 
     const videoRef = useRef(null)
 
-    const questions = [
-        '100에서 7을 계속 빼보세요. 100, 93, 그다음은?',
-        '오늘이 무슨 요일인지, 지금 몇 월인지 말씀해 주세요.',
-        '길을 걷다가 친구가 넘어졌다면, 어떻게 도와줄까요?'
-    ]
+    const generateQuestions = async () => {
+        setIsLoading(true)
+        setQuestions([])
+
+        try {
+            const questionPromises = [
+                fetchQuestionFromGPT(),
+                fetchQuestionFromGPT(),
+                fetchQuestionFromGPT()
+            ]
+
+            console.log('Fetching questions...') // 로깅 추가
+            const generatedQuestions = await Promise.all(questionPromises)
+
+            console.log('Generated Questions:', generatedQuestions) // 생성된 질문 로깅
+            setQuestions(generatedQuestions)
+        } catch (error) {
+            console.error('질문 생성 실패:', error)
+            console.error('Error Details:', error.response?.data || error.message) // 상세 오류 로깅
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const startConversation = async () => {
+        try {
+            await generateQuestions()
+            setResponses([])
+            setCurrentStep(0)
+            setCurrentAnswer(null)
+            setIsStarted(true)
+            setIsFinished(false)
+
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+            stream.getTracks().forEach(track => track.stop())
+
+            await startQuestion(0)
+        } catch (error) {
+            console.error('Conversation error:', error)
+            updateStatus(`오류가 발생했습니다: ${error.message}`, 'error')
+            setIsStarted(false)
+        }
+    }
+
+    const startQuestion = async stepIndex => {
+        try {
+            const startImage = captureImage() // 질문 시작 시 이미지 캡처
+            await sendImageToServer(startImage, stepIndex + 1) // 시작 이미지 전송
+
+            await speak(questions[stepIndex])
+            await listen()
+
+            const endImage = captureImage() // 질문 끝날 때 이미지 캡처
+            await sendImageToServer(endImage, stepIndex + 1) // 끝 이미지 전송
+        } catch (error) {
+            console.error('Question error:', error)
+        }
+    }
+
+    const handleNextQuestion = async () => {
+        stopRecognition()
+
+        if (currentAnswer) {
+            setResponses(prev => [
+                ...prev,
+                {
+                    question: questions[currentStep],
+                    answer: currentAnswer
+                }
+            ])
+            setCurrentAnswer(null)
+        }
+
+        if (currentStep < questions.length - 1) {
+            setCurrentStep(prev => prev + 1)
+            await startQuestion(currentStep + 1)
+        } else {
+            updateStatus('모든 대화가 완료되었습니다.', 'success')
+            setIsFinished(true)
+            setIsStarted(false)
+        }
+    }
 
     const startCamera = async () => {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -189,70 +310,12 @@ const VoiceChat = () => {
         }
     }
 
-    const handleNextQuestion = async () => {
-        stopRecognition()
-
-        if (currentAnswer) {
-            setResponses(prev => [
-                ...prev,
-                {
-                    question: questions[currentStep],
-                    answer: currentAnswer
-                }
-            ])
-            setCurrentAnswer(null)
-        }
-
-        if (currentStep < questions.length - 1) {
-            setCurrentStep(prev => prev + 1)
-            await startQuestion(currentStep + 1)
-        } else {
-            updateStatus('모든 대화가 완료되었습니다.', 'success')
-            setIsFinished(true)
-            setIsStarted(false)
-        }
-    }
-
-    const startQuestion = async stepIndex => {
-        try {
-            const startImage = captureImage() // 질문 시작 시 이미지 캡처
-            await sendImageToServer(startImage, stepIndex + 1) // 시작 이미지 전송
-
-            await speak(questions[stepIndex])
-            await listen()
-
-            const endImage = captureImage() // 질문 끝날 때 이미지 캡처
-            await sendImageToServer(endImage, stepIndex + 1) // 끝 이미지 전송
-        } catch (error) {
-            console.error('Question error:', error)
-        }
-    }
-
-    const startConversation = async () => {
-        try {
-            setResponses([])
-            setCurrentStep(0)
-            setCurrentAnswer(null)
-            setIsStarted(true)
-            setIsFinished(false)
-
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-            stream.getTracks().forEach(track => track.stop())
-
-            await startQuestion(0)
-        } catch (error) {
-            console.error('Conversation error:', error)
-            updateStatus(`오류가 발생했습니다: ${error.message}`, 'error')
-            setIsStarted(false)
-        }
-    }
-
     if (isIntroStep) {
         return (
             <div className="w-full h-screen flex flex-col justify-center items-center px-4">
                 {' '}
                 {/* 양쪽 패딩 추가 */}
-                <h1 className="text-2xl font-bold mb-8 text-gray-800">인지능력 검사하기</h1>
+                <h1 className="text-2xl font-bold mb-8 text-gray-800">포근이와 대화하기</h1>
                 <img
                     src={IntroImage} // 적절한 이미지 경로로 대체하세요.
                     alt="인지능력 테스트"
@@ -333,12 +396,24 @@ const VoiceChat = () => {
                         <button
                             onClick={startConversation}
                             className="w-full py-2 mb-3 bg-black text-white rounded-lg hover:opacity-90 transition">
-                            대화 시작
+                            {isLoading ? '질문 생성 중...' : '대화 시작'}
                         </button>
                     ) : (
                         <>
                             {/* 현재 질문 */}
                             <p className="text-center text-base mb-3">{questions[currentStep]}</p>
+
+                            {/* 상태 메시지 */}
+                            <div
+                                className={`text-center p-4 rounded w-full max-w-3xl mb-4 ${
+                                    status.type === 'error'
+                                        ? 'bg-red-100 text-red-600'
+                                        : status.type === 'success'
+                                          ? 'bg-green-100 text-green-600'
+                                          : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                {status.message}
+                            </div>
 
                             {/* 다시 답변하기 버튼 */}
                             {!currentAnswer && (
