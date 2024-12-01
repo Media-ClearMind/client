@@ -10,12 +10,26 @@ export const Analysis = {
         return await fetchData({
             url,
             method: 'GET',
-            AuthOn: true,
+            AuthOn: true, // 인증 헤더 추가
             body: {
                 startDate,
                 endDate,
                 page,
                 limit
+            }
+        })
+    },
+
+    // 인터뷰 결과 제출 API
+    async submitInterviewResult({ questionsAnswers, score }) {
+        const url = `${BASE_URL}/api/interviews/submit`
+        return await fetchData({
+            url,
+            method: 'POST',
+            AuthOn: true, // 인증 헤더 추가
+            body: {
+                questions_answers: questionsAnswers, // 질문과 답변 배열
+                score // 최종 점수
             }
         })
     }

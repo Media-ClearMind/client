@@ -1,6 +1,7 @@
 import { analyzeAnswerWithGPT, fetchQuestionFromGPT } from '@/lib/api/gpt'
 import { useEffect, useRef, useState } from 'react'
 
+import Analysis from '@/lib/api/analysis'
 import Auth from '@/lib/api/auth' // Auth API import
 import IntroImage from '@/assets/images/home_pogny.png' // 인트로 이미지
 import { fetchData } from '@/lib/api/util' // fetchData 유틸 함수
@@ -105,12 +106,21 @@ const VoiceChat = () => {
 
             try {
                 const evaluation = await analyzeAnswerWithGPT(question, currentAnswer)
-                setResponses(prev => [...prev, { question, answer: currentAnswer }])
+                setResponses(prev => {
+                    const updatedResponses = [...prev, { question, answer: currentAnswer }]
+                    console.log('Updated Responses in handleNextQuestion:', updatedResponses)
+                    if (currentStep === questions.length - 1) {
+                        console.log(
+                            'Calling processFinalInterviewResult with responses:',
+                            updatedResponses
+                        )
+                        processFinalInterviewResult(updatedResponses)
+                    }
+                    return updatedResponses
+                })
                 setEvaluations(prev => [...prev, evaluation])
             } catch (error) {
                 console.error('답변 분석 오류:', error)
-                setResponses(prev => [...prev, { question, answer: currentAnswer }])
-                setEvaluations(prev => [...prev, { 적절성: '오류', 이유: '분석 실패' }])
             } finally {
                 setCurrentAnswer(null)
             }
@@ -119,17 +129,36 @@ const VoiceChat = () => {
         if (currentStep < questions.length - 1) {
             setCurrentStep(prev => prev + 1)
             await startQuestion(currentStep + 1)
-        } else {
-            updateStatus('모든 대화가 완료되었습니다.', 'success')
-            setIsFinished(true)
-            setIsStarted(false)
+        }
+    }
 
-            try {
-                await Auth.incrementUserInterviewCount()
-                console.log('인터뷰 카운트 증가 완료.')
-            } catch (error) {
-                console.error('인터뷰 카운트 증가 오류:', error)
-            }
+    const processFinalInterviewResult = async finalResponses => {
+        console.log('Final Responses for Processing:', finalResponses)
+        try {
+            await Auth.incrementUserInterviewCount()
+            console.log('인터뷰 카운트 증가 완료.')
+
+            const totalScore = evaluations.reduce(
+                (sum, evalResult) => sum + (evalResult?.점수 || 0),
+                0
+            )
+            const averageScore = totalScore / evaluations.length
+
+            const questionsAnswers = finalResponses.map((response, index) => ({
+                question: response.question,
+                answer: response.answer,
+                order: index + 1
+            }))
+            console.log('Prepared Questions and Answers:', questionsAnswers)
+
+            // 조건 해제 및 모든 데이터를 전송
+            const result = await Analysis.submitInterviewResult({
+                questionsAnswers,
+                score: averageScore
+            })
+            console.log('Submit Interview Result Response:', result)
+        } catch (error) {
+            console.error('Interview result submission error:', error)
         }
     }
 
