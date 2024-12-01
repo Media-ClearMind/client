@@ -1,12 +1,13 @@
 import { analyzeAnswerWithGPT, fetchQuestionFromGPT } from '@/lib/api/gpt'
 import { useEffect, useRef, useState } from 'react'
 
+import Auth from '@/lib/api/auth' // Auth API import
 import IntroImage from '@/assets/images/home_pogny.png' // 인트로 이미지
 import { fetchData } from '@/lib/api/util' // fetchData 유틸 함수
 import { useNavigate } from 'react-router-dom'
 
 const VoiceChat = () => {
-    const navigate = useNavigate() // 페이지 이동을 위한 useNavigate 훅
+    const navigate = useNavigate()
     const [currentStep, setCurrentStep] = useState(0)
     const [recognition, setRecognition] = useState(null)
     const [currentAnswer, setCurrentAnswer] = useState(null)
@@ -15,13 +16,22 @@ const VoiceChat = () => {
     const [responses, setResponses] = useState([])
     const [isFinished, setIsFinished] = useState(false)
     const [errorMsg, setErrorMsg] = useState('')
-    const [isIntroStep, setIsIntroStep] = useState(true) // 시작 단계 상태
+    const [isIntroStep, setIsIntroStep] = useState(true)
     const [questions, setQuestions] = useState([])
     const [isLoading, setIsLoading] = useState(false)
-    const [evaluations, setEvaluations] = useState([]) // 답변 평가 데이터를 저장
-    const [stepLoading, setStepLoading] = useState(false) // 단계별 로딩 상태
+    const [evaluations, setEvaluations] = useState([])
+    const [currentCount, setCurrentCount] = useState(0) // 인터뷰 카운트 상태
 
     const videoRef = useRef(null)
+
+    const fetchInterviewCount = async () => {
+        try {
+            const response = await Auth.getUserInterviewCount()
+            setCurrentCount(response.data.count)
+        } catch (error) {
+            console.error('인터뷰 카운트 조회 오류:', error)
+        }
+    }
 
     const generateQuestions = async () => {
         setIsLoading(true)
@@ -35,14 +45,13 @@ const VoiceChat = () => {
             ]
 
             console.log('Fetching questions...')
-            const generatedQuestions = await Promise.all(questionPromises) // 모든 질문 생성 완료 대기
+            const generatedQuestions = await Promise.all(questionPromises)
 
             console.log('Generated Questions:', generatedQuestions)
             setQuestions(generatedQuestions)
         } catch (error) {
             console.error('질문 생성 실패:', error)
-            console.error('Error Details:', error.response?.data || error.message)
-            setQuestions([]) // 실패 시 빈 배열로 초기화
+            setQuestions([])
         } finally {
             setIsLoading(false)
         }
@@ -50,7 +59,7 @@ const VoiceChat = () => {
 
     const startConversation = async () => {
         try {
-            await generateQuestions() // 질문 생성
+            await generateQuestions()
             setResponses([])
             setEvaluations([])
             setCurrentStep(0)
@@ -62,7 +71,7 @@ const VoiceChat = () => {
             stream.getTracks().forEach(track => track.stop())
 
             if (questions.length > 0) {
-                await startQuestion(0) // 첫 질문 시작
+                await startQuestion(0)
             } else {
                 updateStatus('질문 생성에 실패했습니다.', 'error')
             }
@@ -75,14 +84,14 @@ const VoiceChat = () => {
 
     const startQuestion = async stepIndex => {
         try {
-            const startImage = captureImage() // 질문 시작 시 이미지 캡처
-            await sendImageToServer(startImage, stepIndex + 1) // 시작 이미지 전송
+            const startImage = captureImage()
+            await sendImageToServer(startImage, stepIndex + 1)
 
             await speak(questions[stepIndex])
             await listen()
 
-            const endImage = captureImage() // 질문 끝날 때 이미지 캡처
-            await sendImageToServer(endImage, stepIndex + 1) // 끝 이미지 전송
+            const endImage = captureImage()
+            await sendImageToServer(endImage, stepIndex + 1)
         } catch (error) {
             console.error('Question error:', error)
         }
@@ -95,7 +104,7 @@ const VoiceChat = () => {
             const question = questions[currentStep]
 
             try {
-                const evaluation = await analyzeAnswerWithGPT(question, currentAnswer) // 분석 대기
+                const evaluation = await analyzeAnswerWithGPT(question, currentAnswer)
                 setResponses(prev => [...prev, { question, answer: currentAnswer }])
                 setEvaluations(prev => [...prev, evaluation])
             } catch (error) {
@@ -103,7 +112,7 @@ const VoiceChat = () => {
                 setResponses(prev => [...prev, { question, answer: currentAnswer }])
                 setEvaluations(prev => [...prev, { 적절성: '오류', 이유: '분석 실패' }])
             } finally {
-                setCurrentAnswer(null) // 상태 초기화
+                setCurrentAnswer(null)
             }
         }
 
@@ -114,8 +123,40 @@ const VoiceChat = () => {
             updateStatus('모든 대화가 완료되었습니다.', 'success')
             setIsFinished(true)
             setIsStarted(false)
+
+            try {
+                await Auth.incrementUserInterviewCount()
+                console.log('인터뷰 카운트 증가 완료.')
+            } catch (error) {
+                console.error('인터뷰 카운트 증가 오류:', error)
+            }
         }
     }
+
+    useEffect(() => {
+        fetchInterviewCount()
+    }, [])
+
+    useEffect(() => {
+        if (!isIntroStep) {
+            startCamera()
+        }
+        return () => {
+            stopCamera()
+        }
+    }, [isIntroStep])
+
+    useEffect(() => {
+        if (isFinished) {
+            stopCamera()
+        }
+    }, [isFinished])
+
+    useEffect(() => {
+        if (isStarted && currentStep === 0) {
+            startQuestion(0)
+        }
+    }, [isStarted, currentStep])
 
     const startCamera = async () => {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -152,27 +193,6 @@ const VoiceChat = () => {
             videoRef.current.srcObject = null
         }
     }
-
-    useEffect(() => {
-        if (!isIntroStep) {
-            startCamera()
-        }
-        return () => {
-            stopCamera()
-        }
-    }, [isIntroStep])
-
-    useEffect(() => {
-        if (isFinished) {
-            stopCamera()
-        }
-    }, [isFinished])
-
-    useEffect(() => {
-        if (isStarted && currentStep === 0) {
-            startQuestion(0) // 첫 질문 강제 실행
-        }
-    }, [isStarted, currentStep])
 
     const updateStatus = (message, type = 'normal', isListening = false) => {
         setStatus({ message, type, isListening })
@@ -288,7 +308,7 @@ const VoiceChat = () => {
                 method: 'POST',
                 body: {
                     image,
-                    count: 1, // 항상 1로 고정
+                    count: currentCount, // 현재 인터뷰 카운트를 사용
                     userId
                 }
             })
@@ -388,7 +408,6 @@ const VoiceChat = () => {
 
             {/* 상단으로 올린 섹션 */}
             <div className="flex flex-col justify-start items-center flex-grow pt-4 px-4">
-                <p className="text-center text-black text-base mb-3">{questions[currentStep]}</p>
                 {/* 상태 메시지 */}
                 <div
                     className={`text-center p-4 rounded w-full max-w-3xl ${
