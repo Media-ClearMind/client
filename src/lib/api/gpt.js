@@ -106,5 +106,4 @@ const analyzeAnswerWithGPT = async (question, userAnswer) => {
     }
 }
 
-
 export { fetchQuestionFromGPT, analyzeAnswerWithGPT }
