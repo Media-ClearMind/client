@@ -7,7 +7,7 @@ import React from 'react'
 const HomePage = ({ user = { displayName: '익명' } }) => {
     // 더미 데이터
     const dummyDDay = 30
-    const dummyGoal = '인지 능력 테스트 하기'
+    const dummyGoal = '앞으로도 꾸준히 !'
 
     return (
         <div className="flex flex-col h-screen bg-gray-50 text-black">
@@ -44,7 +44,6 @@ const HomePage = ({ user = { displayName: '익명' } }) => {
                     dDay={dummyDDay}
                     myGoal={dummyGoal}
                 />
-
                 {/* MaintenanceGoals 컴포넌트 호출 */}
                 <MaintenanceGoals />
             </div>
