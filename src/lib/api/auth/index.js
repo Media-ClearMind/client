@@ -41,6 +41,16 @@ export const Auth = {
             body: updatedData, // 수정할 데이터 전달
             AuthOn: true // 토큰 인증 활성화
         })
+    },
+    // 비밀번호 변경 API
+    async changePassword({ currentPassword, newPassword }) {
+        const url = `${BASE_URL}/api/users/change-password`
+        return await fetchData({
+            url,
+            method: 'PUT',
+            body: { currentPassword, newPassword },
+            AuthOn: true // 인증 헤더 추가
+        })
     }
 }
 
