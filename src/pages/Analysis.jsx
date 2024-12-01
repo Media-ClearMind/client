@@ -47,27 +47,32 @@ const VoiceChat = () => {
             setIsLoading(false)
         }
     }
-
+    
     const startConversation = async () => {
         try {
-            await generateQuestions()
-            setResponses([])
-            setEvaluations([])
-            setCurrentStep(0)
-            setCurrentAnswer(null)
-            setIsStarted(true)
-            setIsFinished(false)
-
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-            stream.getTracks().forEach(track => track.stop())
-
-            await startQuestion(0)
+            await generateQuestions(); // 질문 생성
+            setResponses([]);
+            setEvaluations([]);
+            setCurrentStep(0);
+            setCurrentAnswer(null);
+            setIsStarted(true);
+            setIsFinished(false);
+    
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream.getTracks().forEach(track => track.stop());
+    
+            if (questions.length > 0) {
+                await startQuestion(0); // 첫 질문 시작
+            } else {
+                updateStatus('질문 생성에 실패했습니다.', 'error');
+            }
         } catch (error) {
-            console.error('Conversation error:', error)
-            updateStatus(`오류가 발생했습니다: ${error.message}`, 'error')
-            setIsStarted(false)
+            console.error('Conversation error:', error);
+            updateStatus(`오류가 발생했습니다: ${error.message}`, 'error');
+            setIsStarted(false);
         }
-    }
+    };
+    
 
     const startQuestion = async stepIndex => {
         try {
@@ -164,19 +169,38 @@ const VoiceChat = () => {
         }
     }, [isFinished])
 
+    useEffect(() => {
+        if (isStarted && currentStep === 0) {
+            startQuestion(0); // 첫 질문 강제 실행
+        }
+    }, [isStarted, currentStep]);
+    
+
     const updateStatus = (message, type = 'normal', isListening = false) => {
         setStatus({ message, type, isListening })
     }
 
-    const speak = text => {
-        return new Promise(resolve => {
-            const utterance = new SpeechSynthesisUtterance(text)
-            utterance.lang = 'ko-KR'
-            utterance.onend = resolve
-            updateStatus(`🔊 말하는 중: ${text}`)
-            speechSynthesis.speak(utterance)
-        })
-    }
+    const speak = (text) => {
+        return new Promise((resolve) => {
+            if (!text) {
+                console.error('No text provided for speech synthesis');
+                return resolve(); // 빈 텍스트를 방지
+            }
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ko-KR';
+            utterance.onend = () => {
+                console.log('Speech synthesis completed for:', text);
+                resolve();
+            };
+            utterance.onerror = (err) => {
+                console.error('Speech synthesis error:', err);
+                resolve(); // 오류 시에도 프로미스 해제
+            };
+            updateStatus(`🔊 말하는 중: ${text}`, 'normal');
+            speechSynthesis.speak(utterance);
+        });
+    };
+    
 
     const stopRecognition = () => {
         if (recognition) {
