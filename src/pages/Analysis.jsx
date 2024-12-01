@@ -19,6 +19,7 @@ const VoiceChat = () => {
     const [questions, setQuestions] = useState([])
     const [isLoading, setIsLoading] = useState(false)
     const [evaluations, setEvaluations] = useState([]) // 답변 평가 데이터를 저장
+    const [stepLoading, setStepLoading] = useState(false) // 단계별 로딩 상태
 
     const videoRef = useRef(null)
 
@@ -309,18 +310,35 @@ const VoiceChat = () => {
                             <div className="font-bold text-black">Q: {response.question}</div>
                             <div className="text-black mt-1">A: {response.answer}</div>
                             <p className="text-black mt-1">
-                                <strong>평가:</strong> {evaluations[index]?.적절성 || '분석 중'}
+                                <strong>평가:</strong> {evaluations[index]?.['적절성'] || '분석 중'}
                             </p>
                             <p className="text-black mt-1">
-                                <strong>이유:</strong> {evaluations[index]?.점수 || '분석 중'}
+                                <strong>점수:</strong> {evaluations[index]?.['점수'] || '분석 중'}
                             </p>
-                            <p className="text-black mt-1">
-                                <strong>긍정적 특징:</strong>{' '}
-                                {evaluations[index]?.긍정적특징 || '분석 중'}
-                            </p>
-                            <p className="text-black mt-1">
-                                <strong>개선점:</strong> {evaluations[index]?.개선점 || '분석 중'}
-                            </p>
+                            <div className="text-black mt-1">
+                                <strong>긍정적 특징:</strong>
+                                <ul className="list-disc list-inside mt-1 text-sm">
+                                    {evaluations[index]?.['긍정적 특징'] ? (
+                                        evaluations[index]['긍정적 특징'].map((feature, i) => (
+                                            <li key={i}>{feature}</li>
+                                        ))
+                                    ) : (
+                                        <li>분석 중</li>
+                                    )}
+                                </ul>
+                            </div>
+                            <div className="text-black mt-1">
+                                <strong>개선점:</strong>
+                                <ul className="list-disc list-inside mt-1 text-sm">
+                                    {evaluations[index]?.['개선점'] ? (
+                                        evaluations[index]['개선점'].map((improvement, i) => (
+                                            <li key={i}>{improvement}</li>
+                                        ))
+                                    ) : (
+                                        <li>분석 중</li>
+                                    )}
+                                </ul>
+                            </div>
                         </div>
                     ))}
                     <button
