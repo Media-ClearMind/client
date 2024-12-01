@@ -2,14 +2,14 @@ import DDayCounter from '@/components/main/DdayCounter' // DDayCounter 컴포넌
 import { Link } from 'react-router-dom'
 import LogoIcon from '@/assets/images/logo-full-transparent.png'
 import MaintenanceGoals from '@/components/main/Main' // MaintenanceGoals 컴포넌트 import
-import useUserStore from '../stores/useUserStore'
-import { useEffect } from 'react'
 import axios from 'axios'
+import { useEffect } from 'react'
+import useUserStore from '../stores/useUserStore'
 
 const HomePage = () => {
     const { setUser } = useUserStore()
     const user = useUserStore(state => state.user)
-    const userName = user ? user.name : '익명'
+    const userName = user ? user.data.name : '익명'
 
     const fetchData = async () => {
         try {
