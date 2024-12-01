@@ -1,5 +1,7 @@
 import { BsCaretLeftFill, BsCaretRightFill } from 'react-icons/bs'
+import React, { useEffect, useState } from 'react'
 
+import Analysis from '@/lib/api/analysis'
 import cn from '@/utils/formatter/cn'
 
 const monthNames = [
@@ -33,7 +35,12 @@ const getHeatmapColor = achieved => {
     }
 }
 
-const Calendar = ({ currentDate, setCurrentDate, dayAchieveMap }) => {
+const Calendar = () => {
+    const [currentDate, setCurrentDate] = useState(new Date()) // 현재 날짜
+    const [dayAchieveMap, setDayAchieveMap] = useState(new Map()) // 날짜별 데이터 맵핑
+    const [loading, setLoading] = useState(false)
+
+    // 달력 생성 함수
     const generateCalendar = date => {
         const year = date.getFullYear()
         const month = date.getMonth()
@@ -69,8 +76,41 @@ const Calendar = ({ currentDate, setCurrentDate, dayAchieveMap }) => {
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
     }
 
+    // 날짜별 데이터를 API로 가져오는 함수
+    const fetchAnalysisData = async () => {
+        const startDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-01`
+        const endDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 2).padStart(2, '0')}-01`
+
+        setLoading(true)
+        try {
+            const response = await Analysis.getAnalysisHistory({ startDate, endDate })
+            const dayMap = new Map()
+
+            // 데이터를 날짜별로 매핑
+            response.data?.interview_results.forEach(result => {
+                const date = result.average_analysis.date
+                const achieved = Math.min(4, Math.max(0, result.count)) // 최대 4로 제한
+                dayMap.set(date, achieved)
+            })
+
+            setDayAchieveMap(dayMap)
+        } catch (error) {
+            console.error('데이터 로드 실패:', error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // 날짜 변경 시 데이터 로드
+    useEffect(() => {
+        fetchAnalysisData()
+    }, [currentDate])
+
     return (
         <div className="w-full bg-white rounded-lg p-4">
+            {/* 로딩 상태 */}
+            {loading && <p className="text-center text-gray-500">로딩 중...</p>}
+
             {/* 달력 헤더 */}
             <div className="flex justify-center items-center mb-4 gap-5">
                 <button

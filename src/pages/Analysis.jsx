@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react'
+import { analyzeAnswerWithGPT, fetchQuestionFromGPT } from '@/lib/api/gpt'
+import { useEffect, useRef, useState } from 'react'
 
 import IntroImage from '@/assets/images/home_pogny.png' // 인트로 이미지
 import { fetchData } from '@/lib/api/util' // fetchData 유틸 함수
@@ -15,14 +16,101 @@ const VoiceChat = () => {
     const [isFinished, setIsFinished] = useState(false)
     const [errorMsg, setErrorMsg] = useState('')
     const [isIntroStep, setIsIntroStep] = useState(true) // 시작 단계 상태
+    const [questions, setQuestions] = useState([])
+    const [isLoading, setIsLoading] = useState(false)
+    const [evaluations, setEvaluations] = useState([]) // 답변 평가 데이터를 저장
 
     const videoRef = useRef(null)
 
-    const questions = [
-        '100에서 7을 계속 빼보세요. 100, 93, 그다음은?',
-        '오늘이 무슨 요일인지, 지금 몇 월인지 말씀해 주세요.',
-        '길을 걷다가 친구가 넘어졌다면, 어떻게 도와줄까요?'
-    ]
+    const generateQuestions = async () => {
+        setIsLoading(true)
+        setQuestions([])
+
+        try {
+            const questionPromises = [
+                fetchQuestionFromGPT(),
+                fetchQuestionFromGPT(),
+                fetchQuestionFromGPT()
+            ]
+
+            console.log('Fetching questions...')
+            const generatedQuestions = await Promise.all(questionPromises) // 모든 질문 생성 완료 대기
+
+            console.log('Generated Questions:', generatedQuestions)
+            setQuestions(generatedQuestions)
+        } catch (error) {
+            console.error('질문 생성 실패:', error)
+            console.error('Error Details:', error.response?.data || error.message)
+            setQuestions([]) // 실패 시 빈 배열로 초기화
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const startConversation = async () => {
+        try {
+            await generateQuestions()
+            setResponses([])
+            setEvaluations([])
+            setCurrentStep(0)
+            setCurrentAnswer(null)
+            setIsStarted(true)
+            setIsFinished(false)
+
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+            stream.getTracks().forEach(track => track.stop())
+
+            await startQuestion(0)
+        } catch (error) {
+            console.error('Conversation error:', error)
+            updateStatus(`오류가 발생했습니다: ${error.message}`, 'error')
+            setIsStarted(false)
+        }
+    }
+
+    const startQuestion = async stepIndex => {
+        try {
+            const startImage = captureImage() // 질문 시작 시 이미지 캡처
+            await sendImageToServer(startImage, stepIndex + 1) // 시작 이미지 전송
+
+            await speak(questions[stepIndex])
+            await listen()
+
+            const endImage = captureImage() // 질문 끝날 때 이미지 캡처
+            await sendImageToServer(endImage, stepIndex + 1) // 끝 이미지 전송
+        } catch (error) {
+            console.error('Question error:', error)
+        }
+    }
+
+    const handleNextQuestion = async () => {
+        stopRecognition()
+
+        if (currentAnswer) {
+            const question = questions[currentStep]
+
+            try {
+                const evaluation = await analyzeAnswerWithGPT(question, currentAnswer) // 분석 대기
+                setResponses(prev => [...prev, { question, answer: currentAnswer }])
+                setEvaluations(prev => [...prev, evaluation])
+            } catch (error) {
+                console.error('답변 분석 오류:', error)
+                setResponses(prev => [...prev, { question, answer: currentAnswer }])
+                setEvaluations(prev => [...prev, { 적절성: '오류', 이유: '분석 실패' }])
+            } finally {
+                setCurrentAnswer(null) // 상태 초기화
+            }
+        }
+
+        if (currentStep < questions.length - 1) {
+            setCurrentStep(prev => prev + 1)
+            await startQuestion(currentStep + 1)
+        } else {
+            updateStatus('모든 대화가 완료되었습니다.', 'success')
+            setIsFinished(true)
+            setIsStarted(false)
+        }
+    }
 
     const startCamera = async () => {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -189,70 +277,12 @@ const VoiceChat = () => {
         }
     }
 
-    const handleNextQuestion = async () => {
-        stopRecognition()
-
-        if (currentAnswer) {
-            setResponses(prev => [
-                ...prev,
-                {
-                    question: questions[currentStep],
-                    answer: currentAnswer
-                }
-            ])
-            setCurrentAnswer(null)
-        }
-
-        if (currentStep < questions.length - 1) {
-            setCurrentStep(prev => prev + 1)
-            await startQuestion(currentStep + 1)
-        } else {
-            updateStatus('모든 대화가 완료되었습니다.', 'success')
-            setIsFinished(true)
-            setIsStarted(false)
-        }
-    }
-
-    const startQuestion = async stepIndex => {
-        try {
-            const startImage = captureImage() // 질문 시작 시 이미지 캡처
-            await sendImageToServer(startImage, stepIndex + 1) // 시작 이미지 전송
-
-            await speak(questions[stepIndex])
-            await listen()
-
-            const endImage = captureImage() // 질문 끝날 때 이미지 캡처
-            await sendImageToServer(endImage, stepIndex + 1) // 끝 이미지 전송
-        } catch (error) {
-            console.error('Question error:', error)
-        }
-    }
-
-    const startConversation = async () => {
-        try {
-            setResponses([])
-            setCurrentStep(0)
-            setCurrentAnswer(null)
-            setIsStarted(true)
-            setIsFinished(false)
-
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-            stream.getTracks().forEach(track => track.stop())
-
-            await startQuestion(0)
-        } catch (error) {
-            console.error('Conversation error:', error)
-            updateStatus(`오류가 발생했습니다: ${error.message}`, 'error')
-            setIsStarted(false)
-        }
-    }
-
     if (isIntroStep) {
         return (
             <div className="w-full h-screen flex flex-col justify-center items-center px-4">
                 {' '}
                 {/* 양쪽 패딩 추가 */}
-                <h1 className="text-2xl font-bold mb-8 text-gray-800">인지능력 검사하기</h1>
+                <h1 className="text-2xl font-bold mb-8 text-gray-800">포근이와 대화하기</h1>
                 <img
                     src={IntroImage} // 적절한 이미지 경로로 대체하세요.
                     alt="인지능력 테스트"
@@ -276,8 +306,21 @@ const VoiceChat = () => {
                         <div
                             key={index}
                             className="my-4 p-4 bg-gray-100 rounded-lg">
-                            <div className="font-bold text-gray-600">Q: {response.question}</div>
-                            <div className="text-gray-800 mt-1">A: {response.answer}</div>
+                            <div className="font-bold text-black">Q: {response.question}</div>
+                            <div className="text-black mt-1">A: {response.answer}</div>
+                            <p className="text-black mt-1">
+                                <strong>평가:</strong> {evaluations[index]?.적절성 || '분석 중'}
+                            </p>
+                            <p className="text-black mt-1">
+                                <strong>이유:</strong> {evaluations[index]?.점수 || '분석 중'}
+                            </p>
+                            <p className="text-black mt-1">
+                                <strong>긍정적 특징:</strong>{' '}
+                                {evaluations[index]?.긍정적특징 || '분석 중'}
+                            </p>
+                            <p className="text-black mt-1">
+                                <strong>개선점:</strong> {evaluations[index]?.개선점 || '분석 중'}
+                            </p>
                         </div>
                     ))}
                     <button
@@ -287,7 +330,7 @@ const VoiceChat = () => {
                     </button>
                     <button
                         onClick={startConversation}
-                        className="w-full py-3 mt-6 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        className="w-full py-3 mt-6 my-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                         다시 시작하기
                     </button>
                 </div>
@@ -306,6 +349,7 @@ const VoiceChat = () => {
 
             {/* 상단으로 올린 섹션 */}
             <div className="flex flex-col justify-start items-center flex-grow pt-4 px-4">
+                <p className="text-center text-black text-base mb-3">{questions[currentStep]}</p>
                 {/* 상태 메시지 */}
                 <div
                     className={`text-center p-4 rounded w-full max-w-3xl ${
@@ -333,7 +377,7 @@ const VoiceChat = () => {
                         <button
                             onClick={startConversation}
                             className="w-full py-2 mb-3 bg-black text-white rounded-lg hover:opacity-90 transition">
-                            대화 시작
+                            {isLoading ? '질문 생성 중...' : '대화 시작'}
                         </button>
                     ) : (
                         <>

@@ -1,9 +1,19 @@
 import axios from 'axios'
 
 export async function fetchData(args) {
-    const { url, method, body, isFormData, file, additionalHeaders } = args
+    const { url, method, body, isFormData, file, additionalHeaders, AuthOn } = args
     const headers = {
         ...additionalHeaders // 추가 헤더 병합
+    }
+
+    // 인증 헤더 추가 (AuthOn이 true일 경우)
+    if (AuthOn) {
+        const token = localStorage.getItem('token') // localStorage에서 token 가져오기
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}` // 인증 토큰 추가
+        } else {
+            throw new Error('No authentication token found') // 토큰이 없을 경우 에러 발생
+        }
     }
 
     // JSON 요청의 경우 Content-Type 설정

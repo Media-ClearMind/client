@@ -53,8 +53,8 @@ function LoginPage() {
             const response = await Auth.loginUser({ email, password }) // username 대신 email 사용
             console.log('로그인 성공:', response)
 
-            localStorage.setItem('token', response.token)
-            localStorage.setItem('userId', response.user.id)
+            localStorage.setItem('token', response.data.token)
+            localStorage.setItem('userId', response.data.user.id)
             navigate('/home')
         } catch (error) {
             console.error('로그인 실패:', error)
