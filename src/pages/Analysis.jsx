@@ -1,12 +1,14 @@
 import { analyzeAnswerWithGPT, fetchQuestionFromGPT } from '@/lib/api/gpt'
 import { useEffect, useRef, useState } from 'react'
 
+import Analysis from '@/lib/api/analysis'
+import Auth from '@/lib/api/auth' // Auth API import
 import IntroImage from '@/assets/images/home_pogny.png' // 인트로 이미지
 import { fetchData } from '@/lib/api/util' // fetchData 유틸 함수
 import { useNavigate } from 'react-router-dom'
 
 const VoiceChat = () => {
-    const navigate = useNavigate() // 페이지 이동을 위한 useNavigate 훅
+    const navigate = useNavigate()
     const [currentStep, setCurrentStep] = useState(0)
     const [recognition, setRecognition] = useState(null)
     const [currentAnswer, setCurrentAnswer] = useState(null)
@@ -15,13 +17,22 @@ const VoiceChat = () => {
     const [responses, setResponses] = useState([])
     const [isFinished, setIsFinished] = useState(false)
     const [errorMsg, setErrorMsg] = useState('')
-    const [isIntroStep, setIsIntroStep] = useState(true) // 시작 단계 상태
+    const [isIntroStep, setIsIntroStep] = useState(true)
     const [questions, setQuestions] = useState([])
     const [isLoading, setIsLoading] = useState(false)
-    const [evaluations, setEvaluations] = useState([]) // 답변 평가 데이터를 저장
-    const [stepLoading, setStepLoading] = useState(false) // 단계별 로딩 상태
+    const [evaluations, setEvaluations] = useState([])
+    const [currentCount, setCurrentCount] = useState(0) // 인터뷰 카운트 상태
 
     const videoRef = useRef(null)
+
+    const fetchInterviewCount = async () => {
+        try {
+            const response = await Auth.getUserInterviewCount()
+            setCurrentCount(response.data.count)
+        } catch (error) {
+            console.error('인터뷰 카운트 조회 오류:', error)
+        }
+    }
 
     const generateQuestions = async () => {
         setIsLoading(true)
@@ -35,14 +46,13 @@ const VoiceChat = () => {
             ]
 
             console.log('Fetching questions...')
-            const generatedQuestions = await Promise.all(questionPromises) // 모든 질문 생성 완료 대기
+            const generatedQuestions = await Promise.all(questionPromises)
 
             console.log('Generated Questions:', generatedQuestions)
             setQuestions(generatedQuestions)
         } catch (error) {
             console.error('질문 생성 실패:', error)
-            console.error('Error Details:', error.response?.data || error.message)
-            setQuestions([]) // 실패 시 빈 배열로 초기화
+            setQuestions([])
         } finally {
             setIsLoading(false)
         }
@@ -61,7 +71,11 @@ const VoiceChat = () => {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
             stream.getTracks().forEach(track => track.stop())
 
-            await startQuestion(0)
+            if (questions.length > 0) {
+                await startQuestion(0)
+            } else {
+                updateStatus('질문 생성에 실패했습니다.', 'error')
+            }
         } catch (error) {
             console.error('Conversation error:', error)
             updateStatus(`오류가 발생했습니다: ${error.message}`, 'error')
@@ -71,14 +85,14 @@ const VoiceChat = () => {
 
     const startQuestion = async stepIndex => {
         try {
-            const startImage = captureImage() // 질문 시작 시 이미지 캡처
-            await sendImageToServer(startImage, stepIndex + 1) // 시작 이미지 전송
+            const startImage = captureImage()
+            await sendImageToServer(startImage, stepIndex + 1)
 
             await speak(questions[stepIndex])
             await listen()
 
-            const endImage = captureImage() // 질문 끝날 때 이미지 캡처
-            await sendImageToServer(endImage, stepIndex + 1) // 끝 이미지 전송
+            const endImage = captureImage()
+            await sendImageToServer(endImage, stepIndex + 1)
         } catch (error) {
             console.error('Question error:', error)
         }
@@ -91,27 +105,87 @@ const VoiceChat = () => {
             const question = questions[currentStep]
 
             try {
-                const evaluation = await analyzeAnswerWithGPT(question, currentAnswer) // 분석 대기
-                setResponses(prev => [...prev, { question, answer: currentAnswer }])
+                const evaluation = await analyzeAnswerWithGPT(question, currentAnswer)
+                setResponses(prev => {
+                    const updatedResponses = [...prev, { question, answer: currentAnswer }]
+                    console.log('Updated Responses in handleNextQuestion:', updatedResponses)
+                    if (currentStep === questions.length - 1) {
+                        console.log(
+                            'Calling processFinalInterviewResult with responses:',
+                            updatedResponses
+                        )
+                        processFinalInterviewResult(updatedResponses)
+                    }
+                    return updatedResponses
+                })
                 setEvaluations(prev => [...prev, evaluation])
             } catch (error) {
                 console.error('답변 분석 오류:', error)
-                setResponses(prev => [...prev, { question, answer: currentAnswer }])
-                setEvaluations(prev => [...prev, { 적절성: '오류', 이유: '분석 실패' }])
             } finally {
-                setCurrentAnswer(null) // 상태 초기화
+                setCurrentAnswer(null)
             }
         }
 
         if (currentStep < questions.length - 1) {
             setCurrentStep(prev => prev + 1)
             await startQuestion(currentStep + 1)
-        } else {
-            updateStatus('모든 대화가 완료되었습니다.', 'success')
-            setIsFinished(true)
-            setIsStarted(false)
         }
     }
+
+    const processFinalInterviewResult = async finalResponses => {
+        console.log('Final Responses for Processing:', finalResponses)
+        try {
+            await Auth.incrementUserInterviewCount()
+            console.log('인터뷰 카운트 증가 완료.')
+
+            const totalScore = evaluations.reduce(
+                (sum, evalResult) => sum + (evalResult?.점수 || 0),
+                0
+            )
+            const averageScore = totalScore / evaluations.length
+
+            const questionsAnswers = finalResponses.map((response, index) => ({
+                question: response.question,
+                answer: response.answer,
+                order: index + 1
+            }))
+            console.log('Prepared Questions and Answers:', questionsAnswers)
+
+            // 조건 해제 및 모든 데이터를 전송
+            const result = await Analysis.submitInterviewResult({
+                questionsAnswers,
+                score: averageScore
+            })
+            console.log('Submit Interview Result Response:', result)
+        } catch (error) {
+            console.error('Interview result submission error:', error)
+        }
+    }
+
+    useEffect(() => {
+        fetchInterviewCount()
+    }, [])
+
+    useEffect(() => {
+        if (!isIntroStep) {
+            startCamera()
+        }
+        return () => {
+            stopCamera()
+        }
+    }, [isIntroStep])
+
+    useEffect(() => {
+        if (isFinished) {
+            stopCamera()
+        }
+    }, [isFinished])
+
+    useEffect(() => {
+        if (isStarted && currentStep === 0) {
+            startQuestion(0)
+        }
+    }, [isStarted, currentStep])
 
     const startCamera = async () => {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -149,31 +223,27 @@ const VoiceChat = () => {
         }
     }
 
-    useEffect(() => {
-        if (!isIntroStep) {
-            startCamera()
-        }
-        return () => {
-            stopCamera()
-        }
-    }, [isIntroStep])
-
-    useEffect(() => {
-        if (isFinished) {
-            stopCamera()
-        }
-    }, [isFinished])
-
     const updateStatus = (message, type = 'normal', isListening = false) => {
         setStatus({ message, type, isListening })
     }
 
     const speak = text => {
         return new Promise(resolve => {
+            if (!text) {
+                console.error('No text provided for speech synthesis')
+                return resolve() // 빈 텍스트를 방지
+            }
             const utterance = new SpeechSynthesisUtterance(text)
             utterance.lang = 'ko-KR'
-            utterance.onend = resolve
-            updateStatus(`🔊 말하는 중: ${text}`)
+            utterance.onend = () => {
+                console.log('Speech synthesis completed for:', text)
+                resolve()
+            }
+            utterance.onerror = err => {
+                console.error('Speech synthesis error:', err)
+                resolve() // 오류 시에도 프로미스 해제
+            }
+            updateStatus(`🔊 말하는 중: ${text}`, 'normal')
             speechSynthesis.speak(utterance)
         })
     }
@@ -267,7 +337,7 @@ const VoiceChat = () => {
                 method: 'POST',
                 body: {
                     image,
-                    count: 1, // 항상 1로 고정
+                    count: currentCount, // 현재 인터뷰 카운트를 사용
                     userId
                 }
             })
@@ -367,7 +437,6 @@ const VoiceChat = () => {
 
             {/* 상단으로 올린 섹션 */}
             <div className="flex flex-col justify-start items-center flex-grow pt-4 px-4">
-                <p className="text-center text-black text-base mb-3">{questions[currentStep]}</p>
                 {/* 상태 메시지 */}
                 <div
                     className={`text-center p-4 rounded w-full max-w-3xl ${
