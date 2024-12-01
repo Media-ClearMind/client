@@ -315,7 +315,8 @@ const VoiceChat = () => {
                                 <strong>이유:</strong> {evaluations[index]?.점수 || '분석 중'}
                             </p>
                             <p className="text-black mt-1">
-                                <strong>긍정적 특징:</strong> {evaluations[index]?.긍정적특징 || '분석 중'}
+                                <strong>긍정적 특징:</strong>{' '}
+                                {evaluations[index]?.긍정적특징 || '분석 중'}
                             </p>
                             <p className="text-black mt-1">
                                 <strong>개선점:</strong> {evaluations[index]?.개선점 || '분석 중'}
