@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import Auth from '@/lib/api/auth'
 import { useNavigate } from 'react-router-dom'
@@ -101,8 +101,8 @@ const UserInfo = () => {
                             onChange={e =>
                                 setEditedInfo({ ...editedInfo, gender: e.target.value })
                             }>
-                            <option value="male">남성</option>
-                            <option value="female">여성</option>
+                            <option value="남성">남성</option>
+                            <option value="여성">여성</option>
                         </select>
                     </div>
                     <div>

@@ -196,9 +196,8 @@ function SignupPage() {
                         value={gender}
                         onChange={e => setGender(e.target.value)}
                         className="w-full p-3 border rounded-md focus:ring focus:ring-blue-300 text-black">
-                        <option value="male">남성</option>
-                        <option value="female">여성</option>
-                        <option value="other">기타</option>
+                        <option value="남성">남성</option>
+                        <option value="여성">여성</option>
                     </select>
                 </div>
 

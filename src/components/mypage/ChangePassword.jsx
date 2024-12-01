@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import Auth from '@/lib/api/auth'
 import { useNavigate } from 'react-router-dom'
 
