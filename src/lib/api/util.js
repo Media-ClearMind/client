@@ -41,6 +41,7 @@ export async function fetchData(args) {
         })
 
         return response.data // 성공적으로 데이터를 반환
+        
     } catch (error) {
         if (axios.isAxiosError(error)) {
             throw new Error(error.response?.data?.message || 'Error executing request') // Axios 에러 처리
