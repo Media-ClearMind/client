@@ -9,9 +9,8 @@ import {
     YAxis
 } from 'recharts'
 import { useEffect, useState } from 'react'
-
-import { data } from './data'
 import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
 
 const StatisticalGraph = () => {
     const [period, setPeriod] = useState('day')
@@ -105,9 +104,41 @@ const StatisticalGraph = () => {
             .sort((a, b) => new Date(a.date) - new Date(b.date))
     }
 
+    const fetchData = async () => {
+        setLoading(true)
+        try {
+            const token = localStorage.getItem('token')
+            const response = await axios.get(
+                `${import.meta.env.VITE_API_BASE_URL}/api/analysis/history`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}` // 인증 헤더 추가
+                    }
+                }
+            ) // API 엔드포인트 수정
+
+            const rawData = response.data.data.interview_results
+            const formattedData = rawData.map(result => ({
+                date: result.average_analysis.date, // 날짜
+                emotion_avg: result.average_analysis.emotion, // 평균 감정
+                face_confidence_avg: result.average_analysis.face_confidence, // 얼굴 신뢰도 평균
+                answer_score: result.progress.total, // 필요한 값으로 대체
+                analysis_id: result.individual_analyses[0]?.analysis?._id || null // 분석 ID
+            }))
+            const processed = processDataByPeriod(formattedData, period)
+            setFilteredData(processed)
+        } catch (error) {
+            console.error('Error fetching data:', error)
+        } finally {
+            setLoading(false)
+        }
+    }
+    // useEffect(() => {
+    //     const processed = processDataByPeriod(data, period)
+    //     setFilteredData(processed)
+    // }, [period])
     useEffect(() => {
-        const processed = processDataByPeriod(data, period)
-        setFilteredData(processed)
+        fetchData()
     }, [period])
 
     const handleChangePeriod = newPeriod => {
