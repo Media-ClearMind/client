@@ -31,6 +31,16 @@ export const Auth = {
             method: 'GET',
             AuthOn: true // 토큰 인증 활성화
         })
+    },
+    // 사용자 프로필 수정 API
+    async updateUserProfile(updatedData) {
+        const url = `${BASE_URL}/api/users/profile` // 프로필 수정 엔드포인트
+        return await fetchData({
+            url,
+            method: 'PUT',
+            body: updatedData, // 수정할 데이터 전달
+            AuthOn: true // 토큰 인증 활성화
+        })
     }
 }
 
