@@ -31,17 +31,17 @@ const Footer = () => {
             <nav className="flex w-full justify-between items-center">
                 <NavItemContainer
                     path="/home"
-                    title="HOME"
+                    title="처음으로"
                     icon={HomeIcons}
                 />
                 <NavItemContainer
                     path="/analysis"
-                    title="ANALYSIS"
+                    title="대화하기"
                     icon={PaperIcons}
                 />
                 <NavItemContainer
                     path="/mypage"
-                    title="MYPAGE"
+                    title="분석보기"
                     icon={ProfileIcons}
                 />
             </nav>
