@@ -10,7 +10,7 @@ import {
 } from 'recharts'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import axios, { all } from 'axios'
 
 const StatisticalGraph = () => {
     const [period, setPeriod] = useState('day')
@@ -108,31 +108,34 @@ const StatisticalGraph = () => {
         setLoading(true)
         try {
             const token = localStorage.getItem('token')
+
+            // API 요청
             const response = await axios.get(
-                `${import.meta.env.VITE_API_BASE_URL}/api/analysis/history`,
+                `${import.meta.env.VITE_API_BASE_URL}/api/result/period/${all}/${all}`,
                 {
                     headers: {
-                        Authorization: `Bearer ${token}` // 인증 헤더 추가
+                        Authorization: `Bearer ${token}` // 인증 헤더
                     }
                 }
-            ) // API 엔드포인트 수정
+            )
 
+            // 서버 응답 처리
             const rawData = response.data.data.interview_results
             const formattedData = rawData.map(result => ({
                 date: result.average_analysis.date, // 날짜
                 emotion_avg: result.average_analysis.emotion, // 평균 감정
                 face_confidence_avg: result.average_analysis.face_confidence, // 얼굴 신뢰도 평균
-                answer_score: result.progress.total, // 필요한 값으로 대체
-                analysis_id: result.individual_analyses[0]?.analysis?._id || null // 분석 ID
+                answer_score: result.progress.total // 총 점수
             }))
             const processed = processDataByPeriod(formattedData, period)
             setFilteredData(processed)
         } catch (error) {
-            console.error('Error fetching data:', error)
+            console.error('Error fetching data:', error.response?.data || error.message)
         } finally {
             setLoading(false)
         }
     }
+
     // useEffect(() => {
     //     const processed = processDataByPeriod(data, period)
     //     setFilteredData(processed)

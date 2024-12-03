@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom'
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts'
 
 const DetailInfo = () => {
-    const { analysis_id } = useParams()
+    const { count } = useParams()
     const [loading, setLoading] = useState(true)
     const [analysisData, setAnalysisData] = useState(null)
     const [dominantEmotion, setDominantEmotion] = useState('')
@@ -89,7 +89,7 @@ const DetailInfo = () => {
         const fetchAnalysisData = async () => {
             try {
                 const response = await axios.get(
-                    `${import.meta.env.VITE_API_BASE_URL}/api/analysis/${analysis_id}`
+                    `${import.meta.env.VITE_API_BASE_URL}/api/result/${count}`
                 ) // API URL
                 const data = response.data
 
@@ -97,7 +97,7 @@ const DetailInfo = () => {
                     ...data,
                     emotion: data.emotion_avg,
                     face_confidence: data.face_confidence_avg,
-                    result: { summary: `Analysis result for ID ${analysis_id}` }
+                    result: { summary: `Analysis result for ID ${count}` }
                 })
 
                 const calculatedStress = calculateStressLevel(data.emotion_avg)
@@ -112,7 +112,7 @@ const DetailInfo = () => {
         }
 
         fetchAnalysisData()
-    }, [analysis_id])
+    }, [count])
 
     const getStressLevelCategory = level => {
         if (level < 20) return { text: '매우 낮음', color: 'text-green-500' }
