@@ -22,6 +22,7 @@ const VoiceChat = () => {
     const [isLoading, setIsLoading] = useState(false)
     const [evaluations, setEvaluations] = useState([])
     const [currentCount, setCurrentCount] = useState(0) // 인터뷰 카운트 상태
+    const [analysisResults, setAnalysisResults] = useState([])
 
     const videoRef = useRef(null)
 
@@ -133,29 +134,29 @@ const VoiceChat = () => {
     }
 
     const processFinalInterviewResult = async finalResponses => {
-        console.log('Final Responses for Processing:', finalResponses)
         try {
             await Auth.incrementUserInterviewCount()
-            console.log('인터뷰 카운트 증가 완료.')
 
             const totalScore = evaluations.reduce(
                 (sum, evalResult) => sum + (evalResult?.점수 || 0),
                 0
             )
-            const averageScore = totalScore / evaluations.length
+            const meanScore = totalScore / evaluations.length
 
             const questionsAnswers = finalResponses.map((response, index) => ({
                 question: response.question,
                 answer: response.answer,
-                order: index + 1
+                order: index + 1,
+                score: evaluations[index]?.점수 || 0
             }))
-            console.log('Prepared Questions and Answers:', questionsAnswers)
 
-            // 조건 해제 및 모든 데이터를 전송
-            const result = await Analysis.submitInterviewResult({
-                questionsAnswers,
-                score: averageScore
-            })
+            const combinedData = {
+                questions_answers: questionsAnswers,
+                analysis_results: analysisResults,
+                mean_score: meanScore
+            }
+
+            const result = await Analysis.submitInterviewResult(combinedData)
             console.log('Submit Interview Result Response:', result)
         } catch (error) {
             console.error('Interview result submission error:', error)
@@ -329,7 +330,7 @@ const VoiceChat = () => {
 
     const sendImageToServer = async (image, count) => {
         try {
-            const userId = localStorage.getItem('userId') // 로컬스토리지에서 userId 가져오기
+            const userId = localStorage.getItem('userId')
             const url = `${import.meta.env.VITE_API_URL}/analyze`
 
             const response = await fetchData({
@@ -337,12 +338,18 @@ const VoiceChat = () => {
                 method: 'POST',
                 body: {
                     image,
-                    count: currentCount, // 현재 인터뷰 카운트를 사용
+                    count: currentCount,
                     userId
                 }
             })
 
-            console.log('Server response:', response)
+            if (response.success) {
+                const analysisData = {
+                    timestamp: response.timestamp,
+                    result: [response.result[0]]
+                }
+                setAnalysisResults(prev => [...prev, analysisData])
+            }
         } catch (error) {
             console.error('Error sending image to server:', error)
         }

@@ -21,16 +21,13 @@ export const Analysis = {
     },
 
     // 인터뷰 결과 제출 API
-    async submitInterviewResult({ questionsAnswers, score }) {
+    async submitInterviewResult(combinedData) {
         const url = `${BASE_URL}/api/interviews/submit`
         return await fetchData({
             url,
             method: 'POST',
-            AuthOn: true, // 인증 헤더 추가
-            body: {
-                questions_answers: questionsAnswers, // 질문과 답변 배열
-                score // 최종 점수
-            }
+            AuthOn: true,
+            body: combinedData
         })
     }
 }
