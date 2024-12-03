@@ -12,7 +12,7 @@ function SignupPage() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [age, setAge] = useState('')
-    const [gender, setGender] = useState('male')
+    const [gender, setGender] = useState('남성')
     const [occupation, setOccupation] = useState('')
     const [error, setError] = useState('')
     const [showPW, setShowPW] = useState(false)
