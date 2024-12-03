@@ -99,7 +99,7 @@ const StatisticalGraph = () => {
                         group.totalScores.length
                 ),
                 itemCount: group.items.length,
-                analysis_id: group.items[0]?.analysis_id
+                count: group.items[0]?.count // count 추가
             }))
             .sort((a, b) => new Date(a.date) - new Date(b.date))
     }
@@ -160,8 +160,8 @@ const StatisticalGraph = () => {
         return null
     }
 
-    const handleClick = analysisID => {
-        navigate(`/detail/${analysisID}`)
+    const handleClick = count => {
+        navigate(`/detail/${count}`)
     }
 
     if (loading)
@@ -207,9 +207,9 @@ const StatisticalGraph = () => {
                             onClick={e => {
                                 if (e?.activePayload?.[0]?.payload) {
                                     const clickedData = e.activePayload[0].payload
-                                    const analysisId = clickedData?.analysis_id
-                                    if (analysisId) {
-                                        handleClick(analysisId)
+                                    const count = clickedData?.count
+                                    if (count) {
+                                        handleClick(count)
                                     }
                                 }
                             }}
