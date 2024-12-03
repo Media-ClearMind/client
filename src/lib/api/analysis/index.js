@@ -5,7 +5,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL
 export const Analysis = {
     // 기간별 분석 결과 조회
     async getAnalysisHistory({ startDate, endDate, page = 1, limit = 20 }) {
-        const url = `${BASE_URL}/api/analysis/history`
+        const url = `${BASE_URL}/api/result/period/${startDate}/${endDate}`
         return await fetchData({
             url,
             method: 'GET',

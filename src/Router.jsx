@@ -48,7 +48,7 @@ const Router = () => {
                         element={<Mypage />}
                     />
                     <Route
-                        path="/detail/:analysis_id"
+                        path="/detail/:count"
                         element={<DetailPage />}
                     />
                     <Route
