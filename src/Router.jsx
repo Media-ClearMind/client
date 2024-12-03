@@ -10,6 +10,7 @@ import ProtectedRoute from '@/components/common/ProtectedRoute'
 import SignupPage from '@/pages/Signup'
 import VoiceChat from '@/pages/Analysis'
 import WelcomePage from '@/pages/Main'
+import ChangePassword from './components/mypage/ChangePassword'
 
 const Router = () => {
     return (
@@ -53,6 +54,10 @@ const Router = () => {
                     <Route
                         path="/analysis"
                         element={<VoiceChat />}
+                    />
+                    <Route
+                        path="/change-password"
+                        element={<ChangePassword />}
                     />
                 </Route>
             </Routes>
