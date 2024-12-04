@@ -5,18 +5,14 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 export const Analysis = {
     // 기간별 분석 결과 조회
-    async getAnalysisHistory({ startDate, endDate, page = 1, limit = 20 }) {
-        const url = `${BASE_URL}/api/result/period/${startDate}/${endDate}`
+    async getAnalysisHistory({ startDate, endDate }) {
+        // 쿼리 스트링 형식으로 URL 생성
+        const url = `${BASE_URL}/api/result?startDate=${startDate}&endDate=${endDate}`
+
         return await fetchData({
             url,
             method: 'GET',
-            AuthOn: true, // 인증 헤더 추가
-            body: {
-                startDate,
-                endDate,
-                page,
-                limit
-            }
+            AuthOn: true // 인증 헤더 추가
         })
     },
 
