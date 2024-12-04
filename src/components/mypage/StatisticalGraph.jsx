@@ -14,7 +14,7 @@ import axios from 'axios'
 
 const StatisticalGraph = () => {
     const [period, setPeriod] = useState('day')
-    const [filteredData, setFilteredData] = useState('')
+    const [filteredData, setFilteredData] = useState([])
     const [loading, setLoading] = useState(false)
     const navigate = useNavigate()
 
@@ -29,16 +29,17 @@ const StatisticalGraph = () => {
             surprise: 0
         }
 
-        const emotionScore = Object.entries(item.emotion_avg).reduce((score, [emotion, value]) => {
-            const weight = emotionWeights[emotion] || 0
-            return score + weight * value
-        }, 0)
+        const emotionScore = Object.entries(item.analysis_average.emotion).reduce(
+            (score, [emotion, value]) => {
+                const weight = emotionWeights[emotion] || 0
+                return score + weight * value
+            },
+            0
+        )
 
         const normalizedEmotionScore = Math.max(0, Math.min(100, 50 + emotionScore))
 
-        return Math.round(
-            normalizedEmotionScore * 0.5 + item.face_confidence_avg * 0.2 + item.answer_score * 0.3
-        )
+        return Math.round(normalizedEmotionScore * 0.5 + item.interview_data.mean_score * 0.5)
     }
 
     const processDataByPeriod = (data, periodType) => {
@@ -99,7 +100,7 @@ const StatisticalGraph = () => {
                         group.totalScores.length
                 ),
                 itemCount: group.items.length,
-                analysis_id: group.items[0]?.analysis_id
+                interview_count: group.items[0]?.interview_count
             }))
             .sort((a, b) => new Date(a.date) - new Date(b.date))
     }
@@ -108,35 +109,25 @@ const StatisticalGraph = () => {
         setLoading(true)
         try {
             const token = localStorage.getItem('token')
-            const response = await axios.get(
-                `${import.meta.env.VITE_API_BASE_URL}/api/analysis/history`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}` // 인증 헤더 추가
-                    }
-                }
-            ) // API 엔드포인트 수정
 
-            const rawData = response.data.data.interview_results
-            const formattedData = rawData.map(result => ({
-                date: result.average_analysis.date, // 날짜
-                emotion_avg: result.average_analysis.emotion, // 평균 감정
-                face_confidence_avg: result.average_analysis.face_confidence, // 얼굴 신뢰도 평균
-                answer_score: result.progress.total, // 필요한 값으로 대체
-                analysis_id: result.individual_analyses[0]?.analysis?._id || null // 분석 ID
-            }))
-            const processed = processDataByPeriod(formattedData, period)
+            // API 요청
+            const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/result`, {
+                headers: {
+                    Authorization: `Bearer ${token}` // 인증 헤더
+                }
+            })
+
+            // 서버 응답 처리
+            const rawData = response.data.data
+            const processed = processDataByPeriod(rawData, period)
             setFilteredData(processed)
         } catch (error) {
-            console.error('Error fetching data:', error)
+            console.error('Error fetching data:', error.response?.data || error.message)
         } finally {
             setLoading(false)
         }
     }
-    // useEffect(() => {
-    //     const processed = processDataByPeriod(data, period)
-    //     setFilteredData(processed)
-    // }, [period])
+
     useEffect(() => {
         fetchData()
     }, [period])
@@ -157,8 +148,8 @@ const StatisticalGraph = () => {
         return null
     }
 
-    const handleClick = analysisID => {
-        navigate(`/detail/${analysisID}`)
+    const handleClick = interview_count => {
+        navigate(`/detail/${interview_count}`)
     }
 
     if (loading)
@@ -204,9 +195,9 @@ const StatisticalGraph = () => {
                             onClick={e => {
                                 if (e?.activePayload?.[0]?.payload) {
                                     const clickedData = e.activePayload[0].payload
-                                    const analysisId = clickedData?.analysis_id
-                                    if (analysisId) {
-                                        handleClick(analysisId)
+                                    const interview_count = clickedData?.interview_count
+                                    if (interview_count) {
+                                        handleClick(interview_count)
                                     }
                                 }
                             }}
@@ -215,14 +206,13 @@ const StatisticalGraph = () => {
                             <XAxis
                                 dataKey="date"
                                 tickFormatter={value => {
-                                    // 날짜 형식을 'MM-DD'로 변경
                                     const date = new Date(value)
                                     const month = String(date.getMonth() + 1).padStart(2, '0')
                                     const day = String(date.getDate()).padStart(2, '0')
                                     return `${month}-${day}`
                                 }}
-                                height={50} // X축 높이 조정
-                                tick={{ fontSize: 12, fill: '#666' }} // 텍스트 스타일 추가
+                                height={50}
+                                tick={{ fontSize: 12, fill: '#666' }}
                             />
                             <YAxis
                                 domain={[0, 100]}
