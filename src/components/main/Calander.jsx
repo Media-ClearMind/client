@@ -20,6 +20,14 @@ const monthNames = [
 ]
 
 // 히트맵 색상 매핑 함수
+const getScoreLevel = meanScore => {
+    if (meanScore >= 90) return 4 // 최고 점수
+    if (meanScore >= 70) return 3
+    if (meanScore >= 50) return 2
+    if (meanScore > 0) return 1
+    return 0 // 점수 없음
+}
+
 const getHeatmapColor = achieved => {
     switch (achieved) {
         case 1:
@@ -78,8 +86,15 @@ const Calendar = () => {
 
     // 날짜별 데이터를 API로 가져오는 함수
     const fetchAnalysisData = async () => {
-        const startDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-01`
-        const endDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 2).padStart(2, '0')}-01`
+        const year = currentDate.getFullYear()
+        const month = currentDate.getMonth()
+
+        // 현재 달의 첫째 날
+        const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`
+
+        // 현재 달의 마지막 날 계산
+        const lastDayOfMonth = new Date(year, month + 1, 0).getDate()
+        const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`
 
         setLoading(true)
         try {
@@ -87,10 +102,11 @@ const Calendar = () => {
             const dayMap = new Map()
 
             // 데이터를 날짜별로 매핑
-            response.data?.interview_results.forEach(result => {
-                const date = result.average_analysis.date
-                const achieved = Math.min(4, Math.max(0, result.count)) // 최대 4로 제한
-                dayMap.set(date, achieved)
+            response.data?.forEach(result => {
+                const date = result.date // 날짜
+                const meanScore = result.interview_data.mean_score // 평균 점수
+                const achievedLevel = getScoreLevel(meanScore) // 점수 기반 색상 레벨 결정
+                dayMap.set(date, achievedLevel)
             })
 
             setDayAchieveMap(dayMap)
