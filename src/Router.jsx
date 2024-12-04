@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
+import ChangePassword from './components/mypage/ChangePassword'
 import DetailPage from '@/pages/mypage/DetailPage'
 import HomePage from '@/pages/Home'
 import Layout from '@/components/common/layout/index'
@@ -10,7 +11,6 @@ import ProtectedRoute from '@/components/common/ProtectedRoute'
 import SignupPage from '@/pages/Signup'
 import VoiceChat from '@/pages/Analysis'
 import WelcomePage from '@/pages/Main'
-import ChangePassword from './components/mypage/ChangePassword'
 
 const Router = () => {
     return (

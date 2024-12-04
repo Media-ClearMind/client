@@ -9,25 +9,24 @@ export default function ProtectedRoute({ children }) {
     useEffect(() => {
         // localStorage에서 토큰 확인
         const token = localStorage.getItem('token')
-
-        // 토큰이 존재하면 인증된 것으로 간주
-        if (token) {
-            setIsAuthenticated(true)
-        } else {
-            setIsAuthenticated(false)
-        }
+        setIsAuthenticated(!!token) // 토큰이 있으면 true, 없으면 false
     }, [])
 
-    // 초기 상태
+    // 초기 로딩 상태
     if (isAuthenticated === null) {
         return <LoadingPage />
     }
 
     // 인증되지 않은 경우 -> /login으로 리다이렉트
     if (!isAuthenticated) {
-        return <Navigate to="/login" />
+        return (
+            <Navigate
+                to="/login"
+                replace
+            />
+        )
     }
 
-    // 인증된 경우 -> 자식 컴포넌트 렌더링
+    // 인증된 경우 -> children 렌더링
     return children
 }
