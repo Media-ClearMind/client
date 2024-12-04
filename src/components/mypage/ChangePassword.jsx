@@ -1,6 +1,6 @@
-import { useState } from 'react'
 import Auth from '@/lib/api/auth'
 import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 
 const ChangePassword = () => {
     const [currentPassword, setCurrentPassword] = useState('')
@@ -29,7 +29,7 @@ const ChangePassword = () => {
     }
 
     return (
-        <div className="max-w-md mx-auto mt-10 p-6 bg-white text-black shadow-lg rounded-lg">
+        <div className="mt-10 p-6 bg-white text-black shadow-lg rounded-lg">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">비밀번호 변경</h2>
             <div className="mb-4">
                 <label className="block text-gray-500 text-sm font-medium mb-2">

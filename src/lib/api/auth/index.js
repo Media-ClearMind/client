@@ -33,7 +33,7 @@ export const Auth = {
         })
     },
 
-  // 인터뷰 카운트 조회 API
+    // 인터뷰 카운트 조회 API
     async getUserInterviewCount() {
         const url = `${BASE_URL}/api/users/count`
         return await fetchData({
@@ -52,7 +52,7 @@ export const Auth = {
             AuthOn: true // 토큰 인증 활성화
         })
     },
-  
+
     // 사용자 프로필 수정 API
     async updateUserProfile(updatedData) {
         const url = `${BASE_URL}/api/users/profile` // 프로필 수정 엔드포인트

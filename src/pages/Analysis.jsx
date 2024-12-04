@@ -23,8 +23,43 @@ const VoiceChat = () => {
     const [evaluations, setEvaluations] = useState([])
     const [currentCount, setCurrentCount] = useState(0) // 인터뷰 카운트 상태
     const [analysisResults, setAnalysisResults] = useState([])
+    const [isCameraPermissionRequested, setCameraPermissionRequested] = useState(false)
 
     const videoRef = useRef(null)
+
+    const requestCameraPermission = async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            setErrorMsg('이 브라우저는 카메라를 지원하지 않습니다.')
+            console.error('mediaDevices 또는 getUserMedia가 지원되지 않습니다.')
+            return
+        }
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false
+            })
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream
+                setErrorMsg('')
+            }
+            setCameraPermissionRequested(true) // 권한 요청 상태 업데이트
+        } catch (error) {
+            if (error.name === 'NotAllowedError') {
+                setErrorMsg('카메라 접근이 허용되지 않았습니다.')
+            } else if (error.name === 'NotFoundError') {
+                setErrorMsg('사용 가능한 카메라가 없습니다.')
+            } else {
+                setErrorMsg('카메라 접근 중 문제가 발생했습니다.')
+            }
+            console.error('카메라 에러:', error)
+        }
+    }
+
+    const handleStartButtonClick = async () => {
+        await requestCameraPermission()
+        setIsIntroStep(false) // 인트로 단계를 종료하고 메인 화면으로 이동
+    }
 
     const fetchInterviewCount = async () => {
         try {
@@ -367,7 +402,7 @@ const VoiceChat = () => {
                     className="w-[300px] h-[300px] mb-8"
                 />
                 <button
-                    onClick={() => setIsIntroStep(false)}
+                    onClick={handleStartButtonClick}
                     className="w-full max-w-3xl bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
                     시작하기
                 </button>
