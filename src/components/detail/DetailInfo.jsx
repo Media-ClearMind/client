@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom'
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts'
 
 const DetailInfo = () => {
-    const { analysis_id } = useParams()
+    const { count } = useParams()
     const [loading, setLoading] = useState(true)
     const [analysisData, setAnalysisData] = useState(null)
     const [dominantEmotion, setDominantEmotion] = useState('')
@@ -14,13 +14,11 @@ const DetailInfo = () => {
     const handleDominantEmotion = emotionData => {
         if (!emotionData || Object.keys(emotionData).length === 0) return
 
-        // `emotionData`에서 가장 높은 값을 가진 감정을 찾음
         const maxEmotion = Object.entries(emotionData).reduce(
             (max, [emotion, value]) => (value > max.value ? { emotion, value } : max),
             { emotion: '', value: -Infinity }
         )
 
-        // 상태 업데이트
         setDominantEmotion(maxEmotion.emotion)
     }
 
@@ -35,20 +33,42 @@ const DetailInfo = () => {
             neutral: 0.1
         }
 
-        // 가중치를 적용한 스트레스 점수 계산
         const weightedSum = Object.entries(emotionData).reduce(
             (sum, [emotion, value]) => sum + value * (stressWeights[emotion] || 0),
             0
         )
 
-        // 감정 값 합산 (전체 합계)
         const totalEmotionValue = Object.values(emotionData).reduce((sum, value) => sum + value, 0)
 
-        // 스트레스 비율 계산 (전체 감정 값에 대한 비율로 환산)
         const stressLevel = (weightedSum / totalEmotionValue) * 100
 
-        // 0-100 사이 값으로 정규화
         return Math.min(100, Math.max(0, stressLevel))
+    }
+
+    const calculateTotalScore = (emotionData, meanScore) => {
+        const emotionWeights = {
+            angry: -0.2,
+            disgust: -0.1,
+            fear: -0.3,
+            happy: 0.2,
+            neutral: 0.1,
+            sad: -0.4,
+            surprise: 0
+        }
+
+        // 감정 점수 계산
+        const emotionScore = Object.entries(emotionData).reduce((score, [emotion, value]) => {
+            const weight = emotionWeights[emotion] || 0
+            return score + weight * value
+        }, 0)
+
+        // 감정 점수를 0~100 범위로 정규화
+        const normalizedEmotionScore = Math.max(0, Math.min(100, 50 + emotionScore))
+
+        // 평균 점수 계산: 얼굴 감정 점수 50% + 면접 점수 50%
+        const totalScore = normalizedEmotionScore * 0.5 + meanScore * 0.5
+
+        return Math.round(totalScore)
     }
 
     const analyzeEmotionalState = emotionData => {
@@ -65,45 +85,37 @@ const DetailInfo = () => {
         return '복합적인 감정 상태'
     }
 
-    // useEffect(() => {
-    //     // analysis_id를 기반으로 데이터 찾기
-    //     const selectedData = data.find(item => item.analysis_id === analysis_id)
-    //     if (selectedData) {
-    //         setAnalysisData({
-    //             ...selectedData,
-    //             emotion: selectedData.emotion_avg, // emotion 데이터로 매핑
-    //             face_confidence: selectedData.face_confidence_avg, // 신뢰도 매핑
-    //             result: { summary: `Analysis result for ID ${analysis_id}` } // 샘플 요약
-    //         })
-    //         const calculatedStress = calculateStressLevel(selectedData.emotion_avg)
-    //         setStressLevel(calculatedStress.toFixed(1))
-    //         setEmotionalState(analyzeEmotionalState(selectedData.emotion_avg))
-    //         handleDominantEmotion(selectedData.emotion_avg)
-    //     } else {
-    //         console.error('Analysis data not found!')
-    //     }
-    //     setLoading(false)
-    // }, [analysis_id])
-
     useEffect(() => {
         const fetchAnalysisData = async () => {
             try {
+                const token = localStorage.getItem('token')
                 const response = await axios.get(
-                    `${import.meta.env.VITE_API_BASE_URL}/api/analysis/${analysis_id}`
-                ) // API URL
-                const data = response.data
+                    `${import.meta.env.VITE_API_BASE_URL}/api/result/${count}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    }
+                )
+
+                const { interview_data, analysis_average, date } = response.data.data
+
+                const totalScore = calculateTotalScore(
+                    analysis_average.emotion,
+                    interview_data.mean_score
+                )
 
                 setAnalysisData({
-                    ...data,
-                    emotion: data.emotion_avg,
-                    face_confidence: data.face_confidence_avg,
-                    result: { summary: `Analysis result for ID ${analysis_id}` }
+                    emotion: analysis_average.emotion,
+                    face_confidence: analysis_average.face_confidence,
+                    mean_score: totalScore, // 수정된 평균 점수 설정
+                    date
                 })
 
-                const calculatedStress = calculateStressLevel(data.emotion_avg)
+                const calculatedStress = calculateStressLevel(analysis_average.emotion)
                 setStressLevel(calculatedStress.toFixed(1))
-                setEmotionalState(analyzeEmotionalState(data.emotion_avg))
-                handleDominantEmotion(data.emotion_avg)
+                setEmotionalState(analyzeEmotionalState(analysis_average.emotion))
+                handleDominantEmotion(analysis_average.emotion)
             } catch (error) {
                 console.error('Error fetching analysis data:', error)
             } finally {
@@ -112,7 +124,7 @@ const DetailInfo = () => {
         }
 
         fetchAnalysisData()
-    }, [analysis_id])
+    }, [count])
 
     const getStressLevelCategory = level => {
         if (level < 20) return { text: '매우 낮음', color: 'text-green-500' }
@@ -127,7 +139,7 @@ const DetailInfo = () => {
     const pieData = analysisData?.emotion
         ? Object.entries(analysisData.emotion).map(([emotion, value]) => ({
               name: emotion.charAt(0).toUpperCase() + emotion.slice(1),
-              value: parseFloat((value * 100).toFixed(1)) // 문자열을 숫자로 변환
+              value: parseFloat(value.toFixed(1))
           }))
         : []
 
@@ -214,6 +226,9 @@ const DetailInfo = () => {
                                 <strong>분석 일자:</strong> {analysisData.date}
                             </p>
                             <p>
+                                <strong>평균 응답 점수:</strong> {analysisData.mean_score}
+                            </p>
+                            <p>
                                 <strong>주요 감정 상태:</strong>{' '}
                                 <span className="capitalize">{dominantEmotion}</span>
                             </p>
@@ -227,7 +242,7 @@ const DetailInfo = () => {
                             <p>
                                 <strong>얼굴 인식 신뢰도:</strong>{' '}
                                 <span className="text-blue-600">
-                                    {analysisData.face_confidence.toFixed(1)}%
+                                    {(analysisData.face_confidence * 100).toFixed(1)}%
                                 </span>
                             </p>
                             <p>
@@ -237,21 +252,6 @@ const DetailInfo = () => {
                                 </span>
                             </p>
                         </div>
-
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                            <p className="font-semibold mb-2">스트레스 관리 권장사항:</p>
-                            <p className="text-sm">
-                                {parseFloat(stressLevel) > 60
-                                    ? '현재 스트레스 수준이 높습니다. 전문가와의 상담을 고려해보세요.'
-                                    : parseFloat(stressLevel) > 40
-                                      ? '적절한 휴식과 스트레스 관리가 필요합니다.'
-                                      : '현재 스트레스 수준이 양호합니다. 현재의 상태를 유지하세요.'}
-                            </p>
-                        </div>
-
-                        {/* <div className="bg-gray-50 p-4 rounded-lg">
-                            <p className="font-semibold">종합 분석:</p>
-                        </div> */}
                     </div>
                 </section>
             </div>

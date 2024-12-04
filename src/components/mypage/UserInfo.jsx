@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import Auth from '@/lib/api/auth'
+import { useNavigate } from 'react-router-dom'
 
 const UserInfo = () => {
     const [userinfo, setUserInfo] = useState(null) // 사용자 정보를 저장할 상태
@@ -8,6 +9,7 @@ const UserInfo = () => {
     const [editedInfo, setEditedInfo] = useState(null) // 수정 중인 정보
     const [isLoading, setIsLoading] = useState(true) // 로딩 상태
     const [error, setError] = useState(null) // 에러 상태
+    const navigate = useNavigate()
 
     // 사용자 정보 가져오기
     useEffect(() => {
@@ -99,8 +101,8 @@ const UserInfo = () => {
                             onChange={e =>
                                 setEditedInfo({ ...editedInfo, gender: e.target.value })
                             }>
-                            <option value="male">남성</option>
-                            <option value="female">여성</option>
+                            <option value="남성">남성</option>
+                            <option value="여성">여성</option>
                         </select>
                     </div>
                     <div>
@@ -138,7 +140,7 @@ const UserInfo = () => {
                     </div>
                 </div>
             )}
-            <div className="mt-6 flex justify-end space-x-4">
+            <div className="mt-6 flex justify-between space-x-4">
                 {isEditing ? (
                     <>
                         <button
@@ -154,7 +156,7 @@ const UserInfo = () => {
                     </>
                 ) : (
                     <button
-                        className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        className="w-1/2 bg-blue-600 text-white py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
                         onClick={() => {
                             setIsEditing(true)
                             setEditedInfo(userinfo.data) // 기존 사용자 정보 설정
@@ -162,7 +164,17 @@ const UserInfo = () => {
                         프로필 수정
                     </button>
                 )}
+                <button
+                    className="w-1/2 bg-blue-600 text-white py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    onClick={() => navigate('/change-password')}>
+                    비밀번호 변경
+                </button>
             </div>
+            <button
+                className="mt-2 w-full bg-blue-600 text-white py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                onClick={() => window.location.reload()}>
+                정보 새로고침
+            </button>
         </div>
     )
 }
