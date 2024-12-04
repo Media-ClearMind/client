@@ -1,7 +1,9 @@
-import axios from 'axios'
+import { Cell, Legend, Pie, PieChart, Tooltip } from 'recharts'
 import { useEffect, useState } from 'react'
+
+import LoadingPage from '@/pages/Loading'
+import axios from 'axios'
 import { useParams } from 'react-router-dom'
-import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts'
 
 const DetailInfo = () => {
     const { count } = useParams()
@@ -171,23 +173,14 @@ const DetailInfo = () => {
         ) : null
     }
 
-    if (loading)
-        return (
-            <div className="flex justify-center items-center h-screen">
-                <div className="text-xl text-gray-600">로딩 중...</div>
-            </div>
-        )
+    if (loading) return <LoadingPage />
 
     return (
-        <div className="h-screen overflow-y-auto bg-gray-100">
-            <div className="max-w-4xl mx-auto p-6 bg-white shadow-md rounded-md relative">
-                <h1 className="text-2xl font-bold mb-4 text-gray-800 sticky top-0 bg-white z-10 py-4 border-b">
-                    분석 디테일 페이지
-                </h1>
-
-                <section className="mb-8">
+        <div className="h-screen w-full ">
+            <div className="w-full p-6 relative">
+                <section className="mb-10">
                     <h2 className="text-xl font-semibold mb-3 text-gray-700">감정 분포</h2>
-                    <div className="flex justify-center">
+                    <div className="flex justify-center mt-[-50px]">
                         <PieChart
                             width={500}
                             height={400}>
@@ -212,6 +205,7 @@ const DetailInfo = () => {
                             <Tooltip />
                             <Legend
                                 verticalAlign="bottom"
+                                width={350}
                                 height={36}
                             />
                         </PieChart>
