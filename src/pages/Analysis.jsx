@@ -110,7 +110,7 @@ const VoiceChat = () => {
             if (questions.length > 0) {
                 await startQuestion(0)
             } else {
-                updateStatus('질문 생성에 실패했습니다.', 'error')
+                updateStatus('질문 생성 중 입니다', 'normal')
             }
         } catch (error) {
             console.error('Conversation error:', error)
